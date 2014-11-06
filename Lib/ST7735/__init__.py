@@ -336,7 +336,6 @@ class TFT(object) :
   def fill( self, aColor ) :
     '''Fill screen with the given color.'''
     self.fillrect(Point(0, 0), self.size, aColor)
-    self._draw(self.size.x * self.size.y, aColor)
 
   def _draw( self, aPixels, aColor ) :
     '''Send given color to the device aPixels times.'''
