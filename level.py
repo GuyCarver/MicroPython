@@ -1,18 +1,18 @@
 #Show level bubble run by the accelerometer
 
 import pyb
-from ST7735 import RED, CYAN, Point
+from ST7735 import RED, CYAN
 import terminalfont
 
-ZeroPoint = Point(0, 0)
+ZeroPoint = (0, 0)
 
 class Bubble(object):
   """Circle simulating the level bubble."""
 
   def __init__(self, aCenter, aSpeed, aRadius, aColor):
-    self.center = aCenter.clone()
-    self.pos = aCenter.clone()
-    self.oldpos = pos.clone()
+    self.center = aCenter
+    self.pos = aCenter
+    self.oldpos = self.pos
     self.speed = aSpeed
     self.radius = aRadius
     self.color = aColor
@@ -23,16 +23,14 @@ class Bubble(object):
 #     xtilt = self.accel.x()
 #     ytilt = self.accel.y()
 
-    xs = (aDisplay.size.x / 2) / 70.0
-    ys = (aDisplay.size.y / 2) / 60.0
+    xs = (aDisplay.size[0] / 2) / 70.0
+    ys = (aDisplay.size[1] / 2) / 60.0
 
-    self.oldpos.x = self.pos.x
-    self.oldpos.y = self.pos.y
-    self.pos.x = int(self.center.x + xtilt * xs)
-    self.pos.y = int(self.center.y - ytilt * ys)
+    self.oldpos = self.pos
+    self.pos = (int(self.center[0] + xtilt * xs), int(self.center[1] - ytilt * ys))
     s = "x: " + str(xtilt) + " y: " + str(ytilt)
-    aDisplay.fillrect(ZeroPoint, Point(aDisplay.size.x, 10), 0)
-    aDisplay.drawstring(ZeroPoint, s, CYAN, terminalfont.terminalfont)
+    aDisplay.fillrect(ZeroPoint, (aDisplay.size[0], 10), 0)
+    aDisplay.text(ZeroPoint, s, CYAN, terminalfont.terminalfont)
 #     aTime *= self.speed
 #     self.pos.x += xtilt * aTime
 #     self.pos.y -= ytilt * aTime
@@ -47,20 +45,19 @@ class Bubble(object):
   def _clamp( self, aDisplay ) :
     l = self.radius
     t = l
-    r = aDisplay.size.x - l
-    b = aDisplay.size.y - l
-    self.pos.x = max(l, min(self.pos.x, r))
-    self.pos.y = max(t, min(self.pos.y, b))
+    r = aDisplay.size[0] - l
+    b = aDisplay.size[1] - l
+    self.pos = (max(l, min(self.pos[0], r)), max(t, min(self.pos[1], b)))
 
 class Level(object):
   """Simulate a level by controlling a bubble on the aDisplay
      controlled by the accelerometer."""
   def __init__(self, aDisplay):
     self.display = aDisplay
-    center = aDisplay.size.clone()
-    center.x /= 2
-    center.y /= 2
-    self.bubble = Bubble(center, 10.0, 5, RED)
+    cx, cy = aDisplay.size
+    cx /= 2
+    cy /= 2
+    self.bubble = Bubble((cx, cy), 10.0, 5, RED)
 
   def run( self ) :
     self.display.fill(0)

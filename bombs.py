@@ -1,7 +1,7 @@
 
 import pyb
 import time
-from ST7735 import Point, CYAN, RED, GREEN, YELLOW, TFTColor
+from ST7735 import CYAN, RED, GREEN, YELLOW, TFTColor
 
 #todo: Pick a ransom spot, random radius, random color
 #todo: Animate the spot
@@ -45,15 +45,15 @@ class bomber(object):
     self.sw = pyb.Switch()
 
   def addbomb( self ) :
-    x = int(randval(self.display.size.x))
-    y = int(randval(self.display.size.y))
+    x = int(randval(self.display.size[0]))
+    y = int(randval(self.display.size[1]))
     rad = randval(20) + 5
     r = pyb.rng() & 0xFF
     g = pyb.rng() & 0xFF
     b = pyb.rng() & 0xFF
     spd = randval(30.0) + 1.0
     clr = TFTColor(r,g,b) #colorA[pyb.rng() & 0x03]
-    self.bombs.insert(0, bomb(Point(x, y), rad, clr, spd))
+    self.bombs.insert(0, bomb((x, y), rad, clr, spd))
 
   def run( self ) :
     while self.sw() == False :
