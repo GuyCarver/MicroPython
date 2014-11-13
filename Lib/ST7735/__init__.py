@@ -66,22 +66,6 @@ TFTRotations = [0x00, 0x60, 0xC0, 0xA0]
 TFTBGR = 0x08 #When set color is bgr else rgb.
 TFTRGB = 0x00
 
-class Point(object):
-  """2D point class"""
-
-  def __init__(self, x = 0, y = 0) :
-    self.x = x
-    self.y = y
-
-  def __str__(self) :
-    return "ST7735.Point(" + str(self.x) + "," + str(self.y)+ ")"
-
-  def __repr__(self) :
-    return self.__str__()
-
-  def clone( self ) :
-    return Point(self.x, self.y)
-
 def clamp( aValue, aMin, aMax ) :
   return max(aMin, min(aMax, aValue))
 
@@ -94,6 +78,7 @@ BLACK = 0
 RED = TFTColor(0xFF, 0x00, 0x00)
 MAROON = TFTColor(0x80, 0x00, 0x00)
 GREEN = TFTColor(0x00, 0xFF, 0x00)
+FOREST = TFTColor(0x00, 0x80, 0x80)
 BLUE = TFTColor(0x00, 0x00, 0xFF)
 NAVY = TFTColor(0x00, 0x00, 0x80)
 CYAN = TFTColor(0x00, 0xFF, 0xFF)
@@ -102,7 +87,7 @@ PURPLE = TFTColor(0xFF, 0x00, 0xFF)
 WHITE = TFTColor(0xFF, 0xFF, 0xFF)
 GRAY = TFTColor(0x80, 0x80, 0x80)
 
-ScreenSize = Point(128, 160)
+ScreenSize = (128, 160)
 
 class TFT(object) :
   """Sainsmart TFT 7735 display driver."""
@@ -115,18 +100,33 @@ class TFT(object) :
   def __init__(self, aLoc, aDC, aReset) :
     """aLoc SPI pin location is either 1 for 'X' or 2 for 'Y'.
        aDC is the DC pin and aReset is the reset pin."""
-    self.size = ScreenSize.clone()
+    self._size = ScreenSize
     self.rotate = 0                    #Vertical with top toward pins.
-    self.rgb = TFTRGB                  #color order of rgb.
+    self._rgb = True                   #color order of rgb.
     self.dc  = pyb.Pin(aDC, pyb.Pin.OUT_PP, pyb.Pin.PULL_DOWN)
     self.reset = pyb.Pin(aReset, pyb.Pin.OUT_PP, pyb.Pin.PULL_DOWN)
-    rate = 100000000 #Set way high but will be clamped to a maximum in SPI constructor.
+    rate = 200000 #100000000 #Set way high but will be clamped to a maximum in SPI constructor.
     cs = "X5" if aLoc == 1 else "Y5"
     self.cs = pyb.Pin(cs, pyb.Pin.OUT_PP, pyb.Pin.PULL_DOWN)
     self.cs.high()
-    self.spi = pyb.SPI(aLoc, pyb.SPI.MASTER, baudrate = rate, polarity = 0, phase = 1, crc=None)
+    self.spi = pyb.SPI(aLoc, pyb.SPI.MASTER, baudrate = rate, polarity = 1, phase = 0, crc=None)
     self.colorData = bytearray(2)
     self.windowLocData = bytearray(4)
+    self.BLACK = BLACK
+    self.RED = RED
+    self.MAROON = MAROON
+    self.GREEN = GREEN
+    self.FOREST = FOREST
+    self.BLUE = BLUE
+    self.NAVY = NAVY
+    self.CYAN = CYAN
+    self.YELLOW = YELLOW
+    self.PURPLE = PURPLE
+    self.WHITE = WHITE
+    self.GRAY = GRAY
+
+  def size( self ):
+    return self._size
 
   def on( self, aTF = True ) :
     '''Turn display on or off.'''
@@ -136,12 +136,12 @@ class TFT(object) :
     '''Invert the color data IE: Black = White.'''
     self._writecommand(ST_INVON if aBool else ST_INVOFF)
 
-  def setrgb( self, aTF = True ) :
+  def rgb( self, aTF = True ) :
     '''True = rgb else bgr'''
-    self.rgb = TFTRBG if aTF else TFTBGR
+    self._rgb = aTF
     self._setMADCTL()
 
-  def setrotation( self, aRot ) :
+  def rotation( self, aRot ) :
     '''0 - 3. Starts vertical with top toward pins and rotates 90 deg
        clockwise each step.'''
     if (0 <= aRot < 4):
@@ -150,43 +150,44 @@ class TFT(object) :
       #If switching from vertical to horizontal swap x,y
       # (indicated by bit 0 changing).
       if (rotchange & 1):
-        self.size.x, self.size.y = self.size.y, self.size.x
+        self._size =(self._size[1], self._size[0])
       self._setMADCTL()
 
-  def drawpixel( self, aPos, aColor ) :
+  def pixel( self, aPos, aColor ) :
     '''Draw a pixel at the given position'''
-    if 0 <= aPos.x < self.size.x and 0 <= aPos.y < self.size.y:
+    if 0 <= aPos[0] < self._size[0] and 0 <= aPos[1] < self._size[1]:
       self._setwindowpoint(aPos)
       self._pushcolor(aColor)
 
-  def drawstring( self, aPos, aString, aColor, aFont, aSize = 1 ) :
-    '''Draw a string at the given position.  If the string reaches the end of the
-       display it is wrapped to aPos.x on the next line.  aSize may be an integer
-       which will size the font uniformly on w,h or a Point with x,y scales or
-       any type that may be indexed with [0] or [1].'''
+  def text( self, aPos, aString, aColor, aFont, aSize = 1 ) :
+    '''Draw a text at the given position.  If the string reaches the end of the
+       display it is wrapped to aPos[0] on the next line.  aSize may be an integer
+       which will size the font uniformly on w,h or a or any type that may be
+       indexed with [0] or [1].'''
+
+    if aFont == None:
+      return
 
     #Make a size either from single value or 2 elements.
     if (type(aSize) == int) or (type(aSize) == float):
-      wh = Point(aSize, aSize)
-    elif (type(aSize) == Point):
-      wh = aSize
+      wh = (aSize, aSize)
     else:
-      wh = Point(aSize[0], aSize[1])
+      wh = aSize
 
-    pos = aPos.clone()
-    width = wh.x * aFont["Width"] + 1
+    px, py = aPos
+    width = wh[0] * aFont["Width"] + 1
     for c in aString:
-      self.drawchar(pos, c, aColor, aFont, wh)
-      pos.x += width
+      self.char((px, py), c, aColor, aFont, wh)
+      px += width
       #We check > rather than >= to let the right (blank) edge of the
       # character print off the right of the screen.
-      if pos.x + width > self.size.x:
-        pos.y += aFont["Height"] * wh.y + 1
-        pos.x = aPos.x
+      if px + width > self._size[0]:
+        py += aFont["Height"] * wh[1] + 1
+        px = aPos[0]
 
-  def drawchar( self, aPos, aChar, aColor, aFont, aSizes ) :
+  def char( self, aPos, aChar, aColor, aFont, aSizes ) :
     '''Draw a character at the given position using the given font and color.
-       aSizes is a Point with x, y as integer scales indicating the
+       aSizes is a tuple with x, y as integer scales indicating the
        # of pixels to draw for each pixel in the character.'''
 
     if aFont == None:
@@ -202,89 +203,115 @@ class TFT(object) :
       ci = (ci - startchar) * fontw
 
       charA = aFont["Data"][ci:ci + fontw]
-      pos = aPos.clone()
-      if aSizes.x <= 1 and aSizes.y <= 1 :
+      px = aPos[0]
+      if aSizes[0] <= 1 and aSizes[1] <= 1 :
         for c in charA :
-          pos.y = aPos.y
+          py = aPos[1]
           for r in range(fonth) :
             if c & 0x01 :
-              self.drawpixel(pos, aColor)
-            pos.y += 1
+              self.pixel((px, py), aColor)
+            py += 1
             c >>= 1
-          pos.x += 1
+          px += 1
       else:
         for c in charA :
-          pos.y = aPos.y
+          py = aPos[1]
           for r in range(fonth) :
             if c & 0x01 :
-              self.fillrect(pos, aSizes, aColor)
-            pos.y += aSizes.y
+              self.fillrect((px, py), aSizes, aColor)
+            py += aSizes[1]
             c >>= 1
-          pos.x += aSizes.x
+          px += aSizes[0]
 
-  def drawline( self, aStart, aEnd, aColor ) :
+  def line( self, aStart, aEnd, aColor ) :
     '''Draws a line from aStart to aEnd in the given color.  Vertical or horizontal
        lines are forwarded to vline and hline.'''
-    if aStart.x == aEnd.x:
+    if aStart[0] == aEnd[0]:
       #Make sure we use the smallest y.
-      pnt = aEnd if (aEnd.y < aStart.y) else aStart
-      self.vline(pnt, abs(aEnd.y - aStart.y) + 1, aColor)
-    elif aStart.y == aEnd.y:
+      pnt = aEnd if (aEnd[1] < aStart[1]) else aStart
+      self.vline(pnt, abs(aEnd[1] - aStart[1]) + 1, aColor)
+    elif aStart[1] == aEnd[1]:
       #Make sure we use the smallest x.
-      pnt = aEnd if aEnd.x < aStart.x else aStart
-      self.hline(pnt, abs(aEnd.x - aStart.x) + 1, aColor)
+      pnt = aEnd if aEnd[0] < aStart[0] else aStart
+      self.hline(pnt, abs(aEnd[0] - aStart[0]) + 1, aColor)
     else:
-      slope = float(aEnd.y - aStart.y) / (aEnd.x - aStart.x)
-      if (abs(slope) < 1.0):
-        for x in range(aStart.x, aEnd.x + 1) :
-          y = (x - aStart.x) * slope + aStart.y
-          self.drawpixel(Point(x, int(y + 0.5)), aColor)
+      px, py = aStart
+      ex, ey = aEnd
+      dx = ex - px
+      dy = ey - py
+      inx = 1 if dx > 0 else -1
+      iny = 1 if dy > 0 else -1
+
+      dx = abs(dx)
+      dy = abs(dy)
+      if (dx >= dy):
+        dy <<= 1
+        e = dy - dx
+        dx <<= 1
+        while (px != ex):
+          self.pixel((px, py), aColor)
+          if (e >= 0):
+            py += iny
+            e -= dx
+          e += dy
+          px += inx
       else:
-        for y in range(aStart.y, aEnd.y + 1) :
-          x = (y - aStart.y) / slope + aStart.x
-          self.drawpixel(Point(int(x + 0.5), y), aColor)
+        dx <<= 1
+        e = dx - dy
+        dy <<= 1
+        while (py != ey):
+          self.pixel((px, py), aColor)
+          if (e >= 0):
+            px += inx
+            e -= dy
+          e += dx
+          py += iny
 
   def vline( self, aStart, aLen, aColor ) :
     '''Draw a vertical line from aStart for aLen. aLen may be negative.'''
-    start = Point(clamp(aStart.x, 0, self.size.x), clamp(aStart.y, 0, self.size.y))
-    stop = Point(start.x, clamp(start.y + aLen, 0, self.size.y))
+    start = (clamp(aStart[0], 0, self._size[0]), clamp(aStart[1], 0, self._size[1]))
+    stop = (start[0], clamp(start[1] + aLen, 0, self._size[1]))
     #Make sure smallest y 1st.
-    if (stop.y < start.y):
+    if (stop[1] < start[1]):
       start, stop = stop, start
     self._setwindowloc(start, stop)
     self._draw(aLen, aColor)
 
   def hline( self, aStart, aLen, aColor ) :
     '''Draw a horizontal line from aStart for aLen. aLen may be negative.'''
-    start = Point(clamp(aStart.x, 0, self.size.x), clamp(aStart.y, 0, self.size.y))
-    stop = Point(clamp(start.x + aLen, 0, self.size.x), start.y)
+    start = (clamp(aStart[0], 0, self._size[0]), clamp(aStart[1], 0, self._size[1]))
+    stop = (clamp(start[0] + aLen, 0, self._size[0]), start[1])
     #Make sure smallest x 1st.
-    if (stop.x < start.x):
+    if (stop[0] < start[0]):
       start, stop = stop, start
     self._setwindowloc(start, stop)
     self._draw(aLen, aColor)
 
   def rect( self, aStart, aSize, aColor ) :
     '''Draw a hollow rectangle.  aStart is the smallest coordinate corner
-       and aSize is a Point indicating width, height.'''
-    self.hline(aStart, aSize.x, aColor)
-    self.hline(Point(aStart.x, aStart.y + aSize.y - 1), aSize.x, aColor)
-    self.vline(aStart, aSize.y, aColor)
-    self.vline(Point(aStart.x + aSize.x - 1, aStart.y), aSize.y, aColor)
+       and aSize is a tuple indicating width, height.'''
+    self.hline(aStart, aSize[0], aColor)
+    self.hline((aStart[0], aStart[1] + aSize[1] - 1), aSize[0], aColor)
+    self.vline(aStart, aSize[1], aColor)
+    self.vline((aStart[0] + aSize[0] - 1, aStart[1]), aSize[1], aColor)
 
   def fillrect( self, aStart, aSize, aColor ) :
     '''Draw a filled rectangle.  aStart is the smallest coordinate corner
-       and aSize is a Point indicating width, height.'''
-    start = Point(clamp(aStart.x, 0, self.size.x), clamp(aStart.y, 0, self.size.y))
-    end = Point(clamp(start.x + aSize.x - 1, 0, self.size.x), clamp(start.y + aSize.y - 1, 0, self.size.y))
+       and aSize is a tuple indicating width, height.'''
+    start = (clamp(aStart[0], 0, self._size[0]), clamp(aStart[1], 0, self._size[1]))
+    end = (clamp(start[0] + aSize[0] - 1, 0, self._size[0]), clamp(start[1] + aSize[1] - 1, 0, self._size[1]))
 
-    if (end.x < start.x):
-      end.x, start.x = start.x, end.x
-    if (end.y < start.y):
-      end.y, start.y = start.y, end.y
+    if (end[0] < start[0]):
+      tmp = end[0]
+      end = (start[0], end[1])
+      start = (tmp, start[1])
+    if (end[1] < start[1]):
+      tmp = end[1]
+      end = (end[0], start[1])
+      start = (start[0], tmp)
 
     self._setwindowloc(start, end)
-    numPixels = (end.x - start.x + 1) * (end.y - start.y + 1)
+    numPixels = (end[0] - start[0] + 1) * (end[1] - start[1] + 1)
     self._draw(numPixels, aColor)
 
   def circle( self, aPos, aRadius, aColor ) :
@@ -295,32 +322,30 @@ class TFT(object) :
     rsq = aRadius * aRadius
     for x in range(xend) :
       y = int(sqrt(rsq - x * x))
-      xp = aPos.x + x
-      yp = aPos.y + y
-      xn = aPos.x - x
-      yn = aPos.y - y
-      xyp = aPos.x + y
-      yxp = aPos.y + x
-      xyn = aPos.x - y
-      yxn = aPos.y - x
+      xp = aPos[0] + x
+      yp = aPos[1] + y
+      xn = aPos[0] - x
+      yn = aPos[1] - y
+      xyp = aPos[0] + y
+      yxp = aPos[1] + x
+      xyn = aPos[0] - y
+      yxn = aPos[1] - x
 
-      self._setwindowpoint(Point(xp, yp))
+      self._setwindowpoint((xp, yp))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xp, yn))
+      self._setwindowpoint((xp, yn))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xn, yp))
+      self._setwindowpoint((xn, yp))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xn, yn))
+      self._setwindowpoint((xn, yn))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xp, yn))
+      self._setwindowpoint((xyp, yxp))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xyp, yxp))
+      self._setwindowpoint((xyp, yxn))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xyp, yxn))
+      self._setwindowpoint((xyn, yxp))
       self._writedata(self.colorData)
-      self._setwindowpoint(Point(xyn, yxp))
-      self._writedata(self.colorData)
-      self._setwindowpoint(Point(xyn, yxn))
+      self._setwindowpoint((xyn, yxn))
       self._writedata(self.colorData)
 
   def fillcircle( self, aPos, aRadius, aColor ) :
@@ -328,14 +353,17 @@ class TFT(object) :
     rsq = aRadius * aRadius
     for x in range(aRadius) :
       y = int(sqrt(rsq - x * x))
-      y0 = aPos.y - y
-      ln = y * 2
-      self.vline(Point(aPos.x + x, y0), ln, aColor)
-      self.vline(Point(aPos.x - x, y0), ln, aColor)
+      y0 = aPos[1] - y
+      ey = y0 + y * 2
+      y0 = clamp(y0, 0, self._size[1])
+      ln = abs(ey - y0) + 1;
 
-  def fill( self, aColor ) :
+      self.vline((aPos[0] + x, y0), ln, aColor)
+      self.vline((aPos[0] - x, y0), ln, aColor)
+
+  def fill( self, aColor = BLACK ) :
     '''Fill screen with the given color.'''
-    self.fillrect(Point(0, 0), self.size, aColor)
+    self.fillrect((0, 0), self._size, aColor)
 
   def _draw( self, aPixels, aColor ) :
     '''Send given color to the device aPixels times.'''
@@ -350,8 +378,8 @@ class TFT(object) :
 
   def _setwindowpoint( self, aPos ) :
     '''Set a single point for drawing a color to.'''
-    x = int(aPos.x)
-    y = int(aPos.y)
+    x = int(aPos[0])
+    y = int(aPos[1])
     self._writecommand(ST_CASET)            #Column address set.
     self.windowLocData[0] = 0x00
     self.windowLocData[1] = x
@@ -369,14 +397,14 @@ class TFT(object) :
     '''Set a rectangular area for drawing a color to.'''
     self._writecommand(ST_CASET)            #Column address set.
     self.windowLocData[0] = 0x00
-    self.windowLocData[1] = int(aPos0.x)
+    self.windowLocData[1] = int(aPos0[0])
     self.windowLocData[2] = 0x00
-    self.windowLocData[3] = int(aPos1.x)
+    self.windowLocData[3] = int(aPos1[0])
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_RASET)            #Row address set.
-    self.windowLocData[1] = int(aPos0.y)
-    self.windowLocData[3] = int(aPos1.y)
+    self.windowLocData[1] = int(aPos0[1])
+    self.windowLocData[3] = int(aPos1[1])
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_RAMWR)            #Write to RAM.
@@ -405,7 +433,8 @@ class TFT(object) :
   def _setMADCTL( self ) :
     '''Set screen rotation and RGB/BGR format.'''
     self._writecommand(ST_MADCTL)
-    self._writedata(TFTRotations[self.rotate] | self.rgb)
+    rgb = TFTRGB if self._rgb else TFTBGR
+    self._writedata(TFTRotations[self.rotate] | rgb)
 
   def _reset(self):
     '''Reset the device.'''
@@ -417,10 +446,9 @@ class TFT(object) :
     self.reset.high()
     pyb.delay(500)
 
-  def _initb(self):
+  def initb(self):
     '''Initialize blue tab version.'''
-    self.size.x = ScreenSize.x + 2
-    self.size.y = ScreenSize.y + 1
+    self._size = (ScreenSize[0] + 2, ScreenSize[1] + 1)
     self._reset()
     self._writecommand(ST_SWRESET)              #Software reset.
     pyb.delay(50)
@@ -462,12 +490,10 @@ class TFT(object) :
     data1[0] = 0x05                             #VGH = 14.7V, VGL = -7.35V
     self._writedata(data1)
 
-#Took this out because with it the screen stays all white.
-#But I tested on green tab version so maybe it will work for blue.
-#     self._writecommand(ST_PWCTR3)           #Power control
-#     data2[0] = 0x01   #Opamp current small
-#     data2[1] = 0x02   #Boost frequency
-#     self._writedata(data2)
+    self._writecommand(ST_PWCTR3)           #Power control
+    data2[0] = 0x01   #Opamp current small
+    data2[1] = 0x02   #Boost frequency
+    self._writedata(data2)
 
     self._writecommand(ST_VMCTR1)               #Power control
     data2[0] = 0x3C   #VCOMH = 4V
@@ -500,12 +526,12 @@ class TFT(object) :
     self.windowLocData[0] = 0x00
     self.windowLocData[1] = 2                   #Start at column 2
     self.windowLocData[2] = 0x00
-    self.windowLocData[3] = self.size.x - 1
+    self.windowLocData[3] = self._size[0] - 1
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_RASET)                #Row address set.
     self.windowLocData[1] = 1                   #Start at row 2.
-    self.windowLocData[3] = self.size.y - 1
+    self.windowLocData[3] = self._size[1] - 1
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_NORON)                #Normal display on.
@@ -518,7 +544,7 @@ class TFT(object) :
     self.cs.high()
     pyb.delay(500)
 
-  def _initr(self):
+  def initr(self):
     '''Initialize a red tab version.'''
     self._reset()
 
@@ -588,11 +614,11 @@ class TFT(object) :
     self.windowLocData[0] = 0x00
     self.windowLocData[1] = 0x00
     self.windowLocData[2] = 0x00
-    self.windowLocData[3] = self.size.x - 1
+    self.windowLocData[3] = self._size[0] - 1
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_RASET)                #Row address set.
-    self.windowLocData[3] = self.size.y - 1
+    self.windowLocData[3] = self._size[1] - 1
     self._writedata(self.windowLocData)
 
     dataGMCTRP = bytearray([0x0f, 0x1a, 0x0f, 0x18, 0x2f, 0x28, 0x20, 0x22, 0x1f,
@@ -614,7 +640,7 @@ class TFT(object) :
 
     self.cs.high()
 
-  def _initg(self):
+  def initg(self):
     '''Initialize a green tab version.'''
     self._reset()
 
@@ -677,11 +703,11 @@ class TFT(object) :
     self.windowLocData[0] = 0x00
     self.windowLocData[1] = 0x01                #Start at row/column 1.
     self.windowLocData[2] = 0x00
-    self.windowLocData[3] = self.size.x - 1
+    self.windowLocData[3] = self._size[0] - 1
     self._writedata(self.windowLocData)
 
     self._writecommand(ST_RASET)                #Row address set.
-    self.windowLocData[3] = self.size.y - 1
+    self.windowLocData[3] = self._size[1] - 1
     self._writedata(self.windowLocData)
 
     dataGMCTRP = bytearray([0x02, 0x1c, 0x07, 0x12, 0x37, 0x32, 0x29, 0x2d, 0x29,
@@ -705,20 +731,20 @@ class TFT(object) :
 def maker():
   t = TFT(1, "X1", "X2")
   print("Initializing")
-  t._initr()
+  t.initr()
   t.fill(0)
   return t
 
 def makeb( ):
   t = TFT(1, "X1", "X2")
   print("Initializing")
-  t._initb()
+  t.initb()
   t.fill(0)
   return t
 
 def makeg( ):
   t = TFT(1, "X1", "X2")
   print("Initializing")
-  t._initg()
+  t.initg()
   t.fill(0)
   return t
