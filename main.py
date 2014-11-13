@@ -5,27 +5,45 @@
 
 # Balance.main()
 
-from basicfont import *
-from seriffont import *
+# from seriffont import *
+# from sysfont import *
 from terminalfont import *
-from bombs import bomber
-from level import Level
+# from SonarDisplay import SonarDisplay
 
-t = makeg()
+pyt = 0
+
+if pyt :
+  from ST7735 import makeg
+  t = makeg()
+else:
+  t = pyb.TFT("x", "X1", "X2") #makegp()
+  t.initg()
+
+t.fill(0)
+
+import TFT
+TFT.run(t)
 
 def tst( aColor ):
   s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=_+[]{}l;'<>?,./!@#$%^&*():"
-  t.drawstring(Point(0, 0), s, aColor, basicfont)
-  t.drawstring(Point(0, 40), s, aColor, seriffont)
-  t.drawstring(Point(0, 80), s, aColor, terminalfont)
+#   t.text(Point(0, 0), s, aColor, basicfont)
+#   t.text(Point(0, 40), s, aColor, seriffont)
+  t.text((0, 40), s, aColor, terminalfont)
 
 # tst(BLUE)
 
 def s(aRot, aColor):
-  t.setrotation(aRot)
+  t.rotation(aRot)
   tst(aColor)
 
+# from bombs import bomber
+# t.rotation(2)
 # b = bomber(t)
-t.setrotation(2)
+# b.run()
+
+from level import Level
 l = Level(t)
 l.run()
+
+# sd = SonarDisplay(t, "X3", "X4")
+# sd.run()

@@ -74,26 +74,26 @@ def TFTColor( aR, aG, aB ) :
      This assumes rgb 565 layout and will be incorrect for bgr.'''
   return ((aR & 0xF8) << 8) | ((aG & 0xFC) << 3) | (aB >> 3)
 
-BLACK = 0
-RED = TFTColor(0xFF, 0x00, 0x00)
-MAROON = TFTColor(0x80, 0x00, 0x00)
-GREEN = TFTColor(0x00, 0xFF, 0x00)
-FOREST = TFTColor(0x00, 0x80, 0x80)
-BLUE = TFTColor(0x00, 0x00, 0xFF)
-NAVY = TFTColor(0x00, 0x00, 0x80)
-CYAN = TFTColor(0x00, 0xFF, 0xFF)
-YELLOW = TFTColor(0xFF, 0xFF, 0x00)
-PURPLE = TFTColor(0xFF, 0x00, 0xFF)
-WHITE = TFTColor(0xFF, 0xFF, 0xFF)
-GRAY = TFTColor(0x80, 0x80, 0x80)
-
 ScreenSize = (128, 160)
 
 class TFT(object) :
   """Sainsmart TFT 7735 display driver."""
 
+  BLACK = 0
+  RED = TFTColor(0xFF, 0x00, 0x00)
+  MAROON = TFTColor(0x80, 0x00, 0x00)
+  GREEN = TFTColor(0x00, 0xFF, 0x00)
+  FOREST = TFTColor(0x00, 0x80, 0x80)
+  BLUE = TFTColor(0x00, 0x00, 0xFF)
+  NAVY = TFTColor(0x00, 0x00, 0x80)
+  CYAN = TFTColor(0x00, 0xFF, 0xFF)
+  YELLOW = TFTColor(0xFF, 0xFF, 0x00)
+  PURPLE = TFTColor(0xFF, 0x00, 0xFF)
+  WHITE = TFTColor(0xFF, 0xFF, 0xFF)
+  GRAY = TFTColor(0x80, 0x80, 0x80)
+
   @staticmethod
-  def makecolor(aR, aG, aB):
+  def color(aR, aG, aB):
     '''Create a 565 rgb TFTColor value'''
     return TFTColor(aR, aG, aB)
 
@@ -112,18 +112,6 @@ class TFT(object) :
     self.spi = pyb.SPI(aLoc, pyb.SPI.MASTER, baudrate = rate, polarity = 1, phase = 0, crc=None)
     self.colorData = bytearray(2)
     self.windowLocData = bytearray(4)
-    self.BLACK = BLACK
-    self.RED = RED
-    self.MAROON = MAROON
-    self.GREEN = GREEN
-    self.FOREST = FOREST
-    self.BLUE = BLUE
-    self.NAVY = NAVY
-    self.CYAN = CYAN
-    self.YELLOW = YELLOW
-    self.PURPLE = PURPLE
-    self.WHITE = WHITE
-    self.GRAY = GRAY
 
   def size( self ):
     return self._size

@@ -1,7 +1,6 @@
 #Show level bubble run by the accelerometer
 
 import pyb
-from ST7735 import RED, CYAN
 import terminalfont
 
 ZeroPoint = (0, 0)
@@ -14,7 +13,7 @@ class Bubble(object):
     self.pos = aCenter
     self.oldpos = self.pos
     self.speed = aSpeed
-    self.radius = aRadius
+    self.radius = int(aRadius)
     self.color = aColor
     self.accel = pyb.Accel()
 
@@ -22,15 +21,15 @@ class Bubble(object):
     xtilt, ytilt, _ = self.accel.filtered_xyz()
 #     xtilt = self.accel.x()
 #     ytilt = self.accel.y()
+    ds = aDisplay.size()
+    xs = (ds[0] / 2) / 70.0
+    ys = (ds[1] / 2) / 60.0
 
-    xs = (aDisplay.size[0] / 2) / 70.0
-    ys = (aDisplay.size[1] / 2) / 60.0
-
-    self.oldpos = self.pos
+    self.oldpos = (int(self.pos[0]), int(self.pos[1]))
     self.pos = (int(self.center[0] + xtilt * xs), int(self.center[1] - ytilt * ys))
     s = "x: " + str(xtilt) + " y: " + str(ytilt)
-    aDisplay.fillrect(ZeroPoint, (aDisplay.size[0], 10), 0)
-    aDisplay.text(ZeroPoint, s, CYAN, terminalfont.terminalfont)
+    aDisplay.fillrect(ZeroPoint, (ds[0], 8), 0)
+    aDisplay.text(ZeroPoint, s, aDisplay.CYAN, terminalfont.terminalfont)
 #     aTime *= self.speed
 #     self.pos.x += xtilt * aTime
 #     self.pos.y -= ytilt * aTime
@@ -45,8 +44,9 @@ class Bubble(object):
   def _clamp( self, aDisplay ) :
     l = self.radius
     t = l
-    r = aDisplay.size[0] - l
-    b = aDisplay.size[1] - l
+    ds = aDisplay.size()
+    r = ds[0] - l
+    b = ds[1] - l
     self.pos = (max(l, min(self.pos[0], r)), max(t, min(self.pos[1], b)))
 
 class Level(object):
@@ -54,10 +54,10 @@ class Level(object):
      controlled by the accelerometer."""
   def __init__(self, aDisplay):
     self.display = aDisplay
-    cx, cy = aDisplay.size
+    cx, cy = aDisplay.size()
     cx /= 2
     cy /= 2
-    self.bubble = Bubble((cx, cy), 10.0, 5, RED)
+    self.bubble = Bubble((cx, cy), 10.0, 5, aDisplay.RED)
 
   def run( self ) :
     self.display.fill(0)

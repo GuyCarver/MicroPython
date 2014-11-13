@@ -2,7 +2,6 @@
 
 import ultrasonic
 import pyb
-from ST7735 import NAVY, CYAN, TFTColor
 import terminalfont
 
 ZeroPoint = (0, 0)
@@ -28,10 +27,10 @@ def round( aValue ) :
   '''Round float value to 2 decimal places'''
   return (aValue - (aValue % 0.01))
 
-def getrgb( aDistance ) :
-  '''Get an interpolated TFTColor based on distance.
+def getrgb( aDisplay, aDistance ) :
+  '''Get an interpolated color based on distance.
      Uses the COLORS list.'''
-  clr = NAVY
+  clr = aDisplay.NAVY
 
   def interp(l, v0, v1):
     return int(v0 * (1.0 - l) + (v1 * l))
@@ -46,7 +45,7 @@ def getrgb( aDistance ) :
       r = interp(l, r0, r1)
       g = interp(l, g0, g1)
       b = interp(l, b0, b1)
-      clr = TFTColor(r,g,b)
+      clr = aDisplay.color(r,g,b)
       break
 
   return clr

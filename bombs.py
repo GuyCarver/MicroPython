@@ -1,12 +1,9 @@
 
 import pyb
 import time
-from ST7735 import CYAN, RED, GREEN, YELLOW, TFTColor
 
 #todo: Pick a ransom spot, random radius, random color
 #todo: Animate the spot
-
-colorA = [CYAN, RED, GREEN, YELLOW]
 
 class bomb(object):
   """Animate a circle on the screen."""
@@ -28,7 +25,7 @@ class bomb(object):
       self.color = 0
       self.curradius = 1.0
 
-    aDisplay.fillcircle(self.pos, rad, color)
+    aDisplay.fillcircle(self.pos, int(rad), color)
 
     return self.state != 2
 
@@ -40,19 +37,20 @@ class bomber(object):
   """Control a bunch of bombs."""
   def __init__(self, aDisplay):
     self.display = aDisplay
+    self.ds = self.display.size()
     self.numbombs = 4
     self.bombs = []
     self.sw = pyb.Switch()
 
   def addbomb( self ) :
-    x = int(randval(self.display.size[0]))
-    y = int(randval(self.display.size[1]))
+    x = int(randval(self.ds[0]))
+    y = int(randval(self.ds[1]))
     rad = randval(20) + 5
     r = pyb.rng() & 0xFF
     g = pyb.rng() & 0xFF
     b = pyb.rng() & 0xFF
     spd = randval(30.0) + 1.0
-    clr = TFTColor(r,g,b) #colorA[pyb.rng() & 0x03]
+    clr = self.display.color(r,g,b)
     self.bombs.insert(0, bomb((x, y), rad, clr, spd))
 
   def run( self ) :
