@@ -214,3 +214,9 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 pybcdc.inf
+
+#############
+## Allway Sync
+#############
+
+_SYNCAPP/
