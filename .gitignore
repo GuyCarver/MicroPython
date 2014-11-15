@@ -220,3 +220,4 @@ pybcdc.inf
 #############
 
 _SYNCAPP/
+_SYNCAPP/metadata.xml
