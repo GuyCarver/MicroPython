@@ -1,4 +1,4 @@
-#Passive infrared motion sensor.
+#Passive infrared motipower sensor.
 
 import pyb
 
@@ -10,28 +10,35 @@ class PIR(object):
     """Power and trigger pins, optional interrupt callback in the format
        of fun( bOnOff ).  This will be called whenever the trigger state
        changes."""
-    self._power = pyb.Pin(power, pyb.Pin.OUT_PP)
-    self._power.low()
+    if power != None:
+      self._power = pyb.Pin(power, pyb.Pin.OUT_PP)
+      self._power.low()
+    else:
+      self._power = None
     self._trigger = pyb.Pin(trigger, pyb.Pin.IN, pyb.Pin.PULL_DOWN)
     self.interrupt = callback
 
-  def _on( self, aTF ) :
+  def _onoff( self, aTF ) :
     """Turn device on/off"""
-    if (aTF):
-      oldon = self.inton
-      self.inton = False  #Make sure interrupt is off while turning on power to avoid false callbacks.
-      self._power.high()
-      if (oldon):
-        pyb.delay(200)     #Need to wait a bit after turning on to make sure we don't get false values.
-        self.inton = oldon
-    else:
-      self._power.low()
+    if (self._power != None):
+      if (aTF):
+        oldon = self.inton
+        self.inton = False  #Make sure interrupt is off while turning on power to avoid false callbacks.
+        self._power.high()
+        if (oldon):
+          pyb.delay(200)     #Need to wait a bit after turning on to make sure we don't get false values.
+          self.inton = oldon
+      else:
+        self._power.low()
 
   @property
-  def on(self): return self._power.value()
+  def power(self): return True if (self._power == None) else self._power.value()
 
-  @on.setter
-  def on(self, value): self._on(value)
+  @power.setter
+  def power(self, value): self._onoff(value)
+
+  def on( self ) : self.power = True
+  def off( self ) : self.power = False
 
   @property
   def trigger(self): return self._trigger.value()
@@ -43,13 +50,12 @@ class PIR(object):
   def interrupt(self, func):
     self._interrupt = None;
     self._func = func
-    if (aFunc != None):
+    if (func != None):
       self._interrupt = pyb.ExtInt(self._trigger, pyb.ExtInt.IRQ_RISING_FALLING, pyb.Pin.PULL_DOWN, self._inthandler)
       self._inton = True
 
-  def _inthandler(self, aLine):
+  def _inthandler(self, line):
     '''Function to handle interrupts and pass on to callback with on/off trigger state.'''
-       call
     if (self._func != None):
       self._func(self.trigger)
 
@@ -64,4 +70,3 @@ class PIR(object):
         self._interrupt.enable()
       else:
         self._interrupt.disable()
-

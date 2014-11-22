@@ -1,6 +1,5 @@
 # main.py -- put your code here!
 
-# import TreatThrower
 # import Balance
 
 # Balance.main()
@@ -16,13 +15,13 @@ if pyt :
   from ST7735 import makeg
   t = makeg()
 else:
-  t = pyb.TFT("x", "X1", "X2") #makegp()
+  t = pyb.TFT("x", "X1", "X2")
   t.initg()
 
 t.fill(0)
 
-import TFT
-TFT.run(t)
+# import TFT
+# TFT.run(t)
 
 def tst( aColor ):
   s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=_+[]{}l;'<>?,./!@#$%^&*():"
@@ -41,9 +40,20 @@ def s(aRot, aColor):
 # b = bomber(t)
 # b.run()
 
-from level import Level
-l = Level(t)
-l.run()
+# from level import Level
+# l = Level(t)
+# l.run()
 
 # sd = SonarDisplay(t, "X3", "X4")
 # sd.run()
+
+# import motion
+# m = motion.motion(t)
+# # m.run()
+
+# import TreatThrower
+# tt = TreatThrower.TreatThrower(m)
+# tt.run()
+
+from L298N import Motor
+m = Motor('Y2', 'Y1', ('Y3', 10))

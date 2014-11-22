@@ -1,41 +1,48 @@
 # Control bot that throws treats using a servo
 
 import pyb
+import motion
 
-servoNum = 1
-servoCenter = 1440
-servoSpeed = 100
-servoTime = 1450
-ledNum = 3
-triggerInput = 'X3'
+class TreatThrower(object):
+  """Watch for trigger and throw treat using servo
+     when trigger is activated."""
 
-def runservo( aServo, aSpeed, aDelay ):
-  aServo.speed(aSpeed)
-  pyb.delay(aDelay)
-  aServo.speed(0)
+  servoCenter = 1440
+  servoSpeed = 100
+  servoTime = 1450
+  ledNum = 3
 
-def main(  ) :
-  s1 = pyb.Servo(servoNum)
-  btn = pyb.Pin(triggerInput, pyb.Pin.IN, pyb.Pin.PULL_UP)
-  mn, mx, _, a, s = s1.calibration()
-  s1.calibration(mn, mx, servoCenter, a, s)
-  s1.speed(0)
-  l = pyb.LED(ledNum)
+  def __init__(self, sensor, servonum = 3):
+    self._sensor = sensor
+    self._servo = pyb.Servo(servonum)
+    mn, mx, _, a, s = self._servo.calibration()
+    self._servo.calibration(mn, mx, TreatThrower.servoCenter, a, s)
+    self._servo.speed(0)
+    self._led = pyb.LED(TreatThrower.ledNum)
 
-  def throwit(  ):
-    l.on()
-    runservo(s1, servoSpeed, servoTime)
-    l.off()
+  def runservo( self, time ) :
+    '''Run the servo for the given time.'''
+    self._servo.speed(TreatThrower.servoSpeed)
+    pyb.delay(time)
+    self._servo.speed(0)
 
-  sw = pyb.Switch()
-#  sw.callback(throwit)
+  def throwit( self ):
+    self._led.on()
+    self.runservo(TreatThrower.servoTime)
+    self._led.off()
+    while(self._sensor.trigger):
+      pass
 
-  while(1):
-    if (btn.value() == 0):
-      throwit()
-    if sw():
-      break;
-    pyb.delay(20)
+  def adjust( self, time = 50 ) :
+    '''Adjust the servo position by running the servo
+       for the given amount of time.'''
+    for i in range(step) :
+      self.runservo(50)
 
-if __name__ == '__main__':
-  main()
+  def run( self ) :
+    sw = pyb.Switch()
+    while(not sw()):
+      if self._sensor.trigger:
+        self.throwit()
+      pyb.delay(20)
+
