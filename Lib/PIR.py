@@ -32,38 +32,38 @@ class PIR(object):
         self._power.low()
 
   @property
-  def power(self): return True if (self._power == None) else self._power.value()
+  def power( self ) : return True if (self._power == None) else self._power.value()
 
   @power.setter
-  def power(self, value): self._onoff(value)
+  def power( self, value ) : self._onoff(value)
 
   def on( self ) : self.power = True
   def off( self ) : self.power = False
 
   @property
-  def trigger(self): return self._trigger.value()
+  def trigger( self ) : return self._trigger.value()
 
   @property
-  def interrupt(self): return self._interrupt
+  def interrupt( self ) : return self._interrupt
 
   @interrupt.setter
-  def interrupt(self, func):
+  def interrupt( self, func ) :
     self._interrupt = None;
     self._func = func
     if (func != None):
       self._interrupt = pyb.ExtInt(self._trigger, pyb.ExtInt.IRQ_RISING_FALLING, pyb.Pin.PULL_DOWN, self._inthandler)
       self._inton = True
 
-  def _inthandler(self, line):
+  def _inthandler( self, line ) :
     '''Function to handle interrupts and pass on to callback with on/off trigger state.'''
     if (self._func != None):
       self._func(self.trigger)
 
   @property
-  def inton(self): return self._inton
+  def inton( self ) : return self._inton
 
   @inton.setter
-  def inton(self, value):
+  def inton( self, value ) :
     self._inton = value
     if self._interrupt != None:
       if value :

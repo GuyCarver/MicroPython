@@ -12,7 +12,7 @@ class TreatThrower(object):
   servoTime = 1450
   ledNum = 3
 
-  def __init__(self, sensor, servonum = 3):
+  def __init__( self, sensor, servonum = 3 ) :
     self._sensor = sensor
     self._servo = pyb.Servo(servonum)
     mn, mx, _, a, s = self._servo.calibration()

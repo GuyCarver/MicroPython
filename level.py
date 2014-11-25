@@ -8,7 +8,7 @@ ZeroPoint = (0, 0)
 class Bubble(object):
   """Circle simulating the level bubble."""
 
-  def __init__(self, aCenter, aSpeed, aRadius, aColor):
+  def __init__( self, aCenter, aSpeed, aRadius, aColor ) :
     self.center = aCenter
     self.pos = aCenter
     self.oldpos = self.pos
@@ -52,7 +52,7 @@ class Bubble(object):
 class Level(object):
   """Simulate a level by controlling a bubble on the aDisplay
      controlled by the accelerometer."""
-  def __init__(self, aDisplay):
+  def __init__( self, aDisplay ) :
     self.display = aDisplay
     cx, cy = aDisplay.size()
     cx /= 2

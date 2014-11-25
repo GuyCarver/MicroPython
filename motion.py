@@ -12,7 +12,7 @@ class motion(PIR.PIR):
   processdelay = 100
 
   """detect motion and print msg on TFT"""
-  def __init__(self, display):
+  def __init__( self, display ) :
     super(motion, self).__init__(None, "X12", self.msg)
     self._extpower = pyb.Pin("X11", pyb.Pin.OUT_PP)
     self._extpower.high()

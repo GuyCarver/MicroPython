@@ -30,11 +30,11 @@ class PWM(object):
   }
 
   class PWMException(Exception):
-      def __init__(self, msg):
+      def __init__( self, msg ) :
           self.msg = msg
 
   @staticmethod
-  def timerandchannel( pinname, timernum ):
+  def timerandchannel( pinname, timernum ) :
     try:
       a = PWM.PinChannels[pinname]
       if timernum <= 0:
@@ -48,7 +48,7 @@ class PWM(object):
 
     raise PWM.PWMException("Pin {} cannot use timer {}".format(pinname, timernum))
 
-  def __init__( self, p, timernum, afreq = 100 ):
+  def __init__( self, p, timernum, afreq = 100 ) :
     isname = type(p) == str
     pinname = p if isname else p.name()
     timernum, channel = PWM.timerandchannel(pinname, timernum)
@@ -59,23 +59,23 @@ class PWM(object):
     self._channel = self._timer.channel(channel, Timer.PWM, pin = p)
 
   @property
-  def pulse_width(self): return self._channel.pulse_width()
+  def pulse_width( self ) : return self._channel.pulse_width()
 
   @pulse_width.setter
-  def pulse_width(self, value): self._channel.pulse_width(value)
+  def pulse_width( self, value ) : self._channel.pulse_width(value)
 
   @property
-  def pulse_width_percent(self): return self._channel.pulse_width_percent()
+  def pulse_width_percent( self ) : return self._channel.pulse_width_percent()
 
   @pulse_width_percent.setter
-  def pulse_width_percent(self, value): self._channel.pulse_width_percent(value)
+  def pulse_width_percent( self, value ) : self._channel.pulse_width_percent(value)
 
   @property
-  def freq(self): return self._timer.freq()
+  def freq( self ) : return self._timer.freq()
 
   @freq.setter
-  def freq(self, value): self._timer.freq(value)
+  def freq( self, value ) : self._timer.freq(value)
 
-  def callback(self, value):
+  def callback( self, value ) :
     self._channel.callback(value)
 

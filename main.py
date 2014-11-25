@@ -1,16 +1,9 @@
 # main.py -- put your code here!
 
-# import Balance
-
-# Balance.main()
-
 # from seriffont import *
 # from sysfont import *
-from terminalfont import *
-# from SonarDisplay import SonarDisplay
-
+# from terminalfont import *
 pyt = 0
-
 if pyt :
   from ST7735 import makeg
   t = makeg()
@@ -18,42 +11,65 @@ else:
   t = pyb.TFT("x", "X1", "X2")
   t.initg()
 
-t.fill(0)
+# t.fill(0)
 
 # import TFT
 # TFT.run(t)
 
-def tst( aColor ):
-  s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=_+[]{}l;'<>?,./!@#$%^&*():"
-#   t.text(Point(0, 0), s, aColor, basicfont)
-#   t.text(Point(0, 40), s, aColor, seriffont)
-  t.text((0, 40), s, aColor, terminalfont)
-
-# tst(BLUE)
-
-def s(aRot, aColor):
-  t.rotation(aRot)
-  tst(aColor)
+# Display animated circle on TFT -------------------------
 
 # from bombs import bomber
 # t.rotation(2)
 # b = bomber(t)
 # b.run()
 
+# Accelerometer display ----------------------------------
+
+# import Balance
+# Balance.main()
+
+# Carpenter level display using accelerometer ------------
+
 # from level import Level
 # l = Level(t)
 # l.run()
 
-# sd = SonarDisplay(t, "X3", "X4")
-# sd.run()
+# PIR motion sensor --------------------------------------
 
 # import motion
 # m = motion.motion(t)
 # # m.run()
 
+# Cat Treat Thrower --------------------------------------
+
 # import TreatThrower
 # tt = TreatThrower.TreatThrower(m)
 # tt.run()
 
-from L298N import Motor
-m = Motor('Y2', 'Y1', ('Y3', 10))
+# L2082 Motor control ------------------------------------
+
+# from L298N import Motor
+# m1 = Motor('Y1', 'Y2', ('Y3', 4))
+# m2 = Motor('Y5', 'Y6', ('Y4', 4))
+
+# IR or SR04 distance display ----------------------------
+
+# from IRDistance import IRDistance
+# r = IRDistance("X12")
+
+# from SR04Distance import SR04Distance
+# r = SR04Distance("Y2", "Y1")
+
+# t.rotation(2)
+# from DistanceDisplay import Display
+# d = Display(t, r)
+# d.run()
+
+# Bluetooth board ----------------------------------------
+
+from JYMCU import JYMCU
+
+u = JYMCU(6, 57600)
+u.write("Testing.")
+u.readline()
+u.setrepl()

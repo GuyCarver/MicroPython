@@ -95,11 +95,11 @@ class TFT(object) :
   GRAY = TFTColor(0x80, 0x80, 0x80)
 
   @staticmethod
-  def color(aR, aG, aB):
+  def color( aR, aG, aB ) :
     '''Create a 565 rgb TFTColor value'''
     return TFTColor(aR, aG, aB)
 
-  def __init__(self, aLoc, aDC, aReset) :
+  def __init__( self, aLoc, aDC, aReset ) :
     """aLoc SPI pin location is either 1 for 'X' or 2 for 'Y'.
        aDC is the DC pin and aReset is the reset pin."""
     self._size = ScreenSize
@@ -115,7 +115,7 @@ class TFT(object) :
     self.colorData = bytearray(2)
     self.windowLocData = bytearray(4)
 
-  def size( self ):
+  def size( self ) :
     return self._size
 
 #   @micropython.native
@@ -448,7 +448,7 @@ class TFT(object) :
     self._writedata(TFTRotations[self.rotate] | rgb)
 
   @micropython.native
-  def _reset(self):
+  def _reset( self ) :
     '''Reset the device.'''
     self.dc.low()
     self.reset.high()
@@ -458,7 +458,7 @@ class TFT(object) :
     self.reset.high()
     pyb.delay(500)
 
-  def initb(self):
+  def initb( self ) :
     '''Initialize blue tab version.'''
     self._size = (ScreenSize[0] + 2, ScreenSize[1] + 1)
     self._reset()
@@ -556,7 +556,7 @@ class TFT(object) :
     self.cs.high()
     pyb.delay(500)
 
-  def initr(self):
+  def initr( self ) :
     '''Initialize a red tab version.'''
     self._reset()
 
@@ -653,7 +653,7 @@ class TFT(object) :
     self.cs.high()
 
   @micropython.native
-  def initg(self):
+  def initg( self ) :
     '''Initialize a green tab version.'''
     self._reset()
 
@@ -741,21 +741,21 @@ class TFT(object) :
 
     self.cs.high()
 
-def maker():
+def maker(  ) :
   t = TFT(1, "X1", "X2")
   print("Initializing")
   t.initr()
   t.fill(0)
   return t
 
-def makeb( ):
+def makeb(  ) :
   t = TFT(1, "X1", "X2")
   print("Initializing")
   t.initb()
   t.fill(0)
   return t
 
-def makeg( ):
+def makeg(  ) :
   t = TFT(1, "X1", "X2")
   print("Initializing")
   t.initg()

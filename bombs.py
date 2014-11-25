@@ -7,7 +7,7 @@ import time
 
 class bomb(object):
   """Animate a circle on the screen."""
-  def __init__(self, aPos, aRadius, aColor, aSpeed):
+  def __init__( self, aPos, aRadius, aColor, aSpeed ) :
     self.pos = aPos
     self.radius = aRadius
     self.color = aColor
@@ -35,7 +35,7 @@ def randval( aVal ) :
 
 class bomber(object):
   """Control a bunch of bombs."""
-  def __init__(self, aDisplay):
+  def __init__( self, aDisplay ) :
     self.display = aDisplay
     self.ds = self.display.size()
     self.numbombs = 4
