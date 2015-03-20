@@ -67,9 +67,27 @@ else:
 
 # Bluetooth board ----------------------------------------
 
-from JYMCU import JYMCU
+# from JYMCU import JYMCU
 
-u = JYMCU(6, 57600)
-u.write("Testing.")
-u.readline()
-u.setrepl()
+# u = JYMCU(6, 57600)
+# u.write("Testing.")
+# u.readline()
+# u.setrepl()
+
+# from pyb import ExtInt
+
+# x = 0
+# def cb(line):
+#   global x
+#   x += 1
+#   print(x)
+
+# f = ExtInt("Y2", ExtInt.IRQ_RISING, pyb.Pin.PULL_UP, cb)
+
+from ESP8266 import WIFI
+
+v = WIFI(6)
+
+from pyb import Pin
+p = Pin("X11", Pin.IN, Pin.PULL_DOWN)
+def v(): return p.value()
