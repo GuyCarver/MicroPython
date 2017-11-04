@@ -1,27 +1,34 @@
 # main.py -- put your code here!
 
 # from seriffont import *
-# from sysfont import *
+#from sysfont import *
 # from terminalfont import *
-pyt = 0
-if pyt :
-  from ST7735 import makeg
-  t = makeg()
-else:
-  t = pyb.TFT("x", "X1", "X2")
-  t.initg()
+import gc
 
-# t.fill(0)
+print(gc.mem_free())
+
+def reboot(  ) : pyb.hard_reset()
+#pyt = 0
+#if pyt :
+#  from ST7735 import makeg
+#  t = makeg()
+#else:
+#  t = pyb.TFT("x", "X1", "X2")
+#  t.initg()
+#
+#t.fill(0)
+#
+#print(gc.mem_free())
 
 # import TFT
 # TFT.run(t)
 
 # Display animated circle on TFT -------------------------
 
-# from bombs import bomber
-# t.rotation(2)
-# b = bomber(t)
-# b.run()
+#from bombs import bomber
+#t.rotation(2)
+#b = bomber(t)
+#b.run()
 
 # Accelerometer display ----------------------------------
 
@@ -84,10 +91,44 @@ else:
 
 # f = ExtInt("Y2", ExtInt.IRQ_RISING, pyb.Pin.PULL_UP, cb)
 
-from ESP8266 import WIFI
+# WIFI board ----------------------------------------
 
-v = WIFI(6)
+# from ESP8266 import WIFI
 
-from pyb import Pin
-p = Pin("X11", Pin.IN, Pin.PULL_DOWN)
-def v(): return p.value()
+# v = WIFI(6)
+
+# from pyb import Pin
+# p = Pin("X11", Pin.IN, Pin.PULL_DOWN)
+# def v(): return p.value()
+
+# Accelerometer board ----------------------------------------
+
+#from GY521 import Accel
+#
+print(gc.mem_free())
+#
+#a = Accel(1)
+#def d(): return a.acceltemprot
+#
+#print(gc.mem_free())
+
+#import gyreport
+#
+#print(gc.mem_free())
+#
+#m = gyreport.motion(1, t)
+#
+#print(gc.mem_free())
+#
+#m.run()
+#
+#print(gc.mem_free())
+
+def do( ) :
+  return pyb.MPU6050('x', 0)
+
+#def prnt( dev, font ) :
+#  dev.text((10, 10), "Hello!", 1, font, 1)
+#  dev.text((10, 30), "Hi Again?", 1, font, 3)
+
+
