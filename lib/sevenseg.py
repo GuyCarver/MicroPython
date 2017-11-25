@@ -40,11 +40,26 @@ class sevenseg(object):
     0b01000000  #dash
   ]
 
+  @staticmethod
+  def flipdigit( aByte ) :
+    bit = 1
+    f = 0
+    #swap bits 0-2 with 3-5 (0-3, 1-4, 2-5)
+    for x in range(3):
+      f |= (aByte & bit) << 3
+      bit <<= 1
+    for x in range(3, 6):
+      f |= (aByte & bit) >> 3
+      bit <<= 1
+    f |= aByte & 0xC0 #Keep the rest of the bits.
+    return f
+
   def __init__(self, clk, dio ):
     self._clk = pyb.Pin(clk, pyb.Pin.IN)
     self._dio = pyb.Pin(dio, pyb.Pin.IN)
     self._brightness = 0
     self._colon = False
+    self._flip = False
     self._buffer = bytearray(4)
 
     self._clk.init(Pin.IN)
@@ -59,6 +74,13 @@ class sevenseg(object):
   @colon.setter
   def colon( self, aValue ) :
     self._colon = aValue
+
+  @property
+  def flip( self ) : return self._flip
+
+  @flip.setter
+  def flip( self, aValue ) :
+    self._flip = aValue
 
   @property
   def brightness( self ) : return self._brightness
@@ -113,16 +135,26 @@ class sevenseg(object):
       v = 0
 
   def display( self ) :
+    colonloc = -2 if self.flip else 1
     if self.colon :
-      self._buffer[1] |= 0x80
+      self._buffer[colonloc] |= 0x80
     else:
-      self._buffer[1] &= ~0x80
+      self._buffer[colonloc] &= ~0x80
 
     self._write_comm1()
     self._start()
     self._write_byte(_CMD2)
-    for b in self._buffer:
-      self._write_byte(b)
+
+    #If screen flipped we need to flip the digits and write in reverse oder.
+    if self.flip:
+      sloc = len(self._buffer) - 1
+      for x in range(sloc, -1, -1):
+        b = self.flipdigit(self._buffer[x])
+        self._write_byte(b)
+    else:
+      for b in self._buffer:
+        self._write_byte(b)
+
     self._stop()
     self._write_comm3()
 

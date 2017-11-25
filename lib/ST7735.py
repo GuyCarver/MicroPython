@@ -759,5 +759,5 @@ def makeg(  ) :
   t = TFT(1, "X1", "X2")
   print("Initializing")
   t.initg()
-  t.fill(0)
+#  t.fill(0)
   return t
