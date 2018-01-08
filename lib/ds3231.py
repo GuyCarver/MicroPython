@@ -1,4 +1,5 @@
 # Driver for ds3231 clock.
+#Uses I2C communication.
 
 import pyb, utime
 
@@ -21,7 +22,7 @@ class ds3231(object):
 
   def __init__( self, aLoc ) :
     """aLoc I2C pin location is either 1 for 'X' or 2 for 'Y'."""
-    self.rtc = pyb.RTC()
+    self.rtc = pyb.RTC() #Real time clock.
     self.i2c = pyb.I2C(aLoc, pyb.I2C.MASTER)
     self._buffer = bytearray(7)
     self.time(True)
