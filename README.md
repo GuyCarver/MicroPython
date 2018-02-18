@@ -2,7 +2,7 @@
 
 ## Contents
 
-###lib directory
+### lib directory
 
 * apds9960 - Proximity/Motion/Color sensor using I2C interface.  Gesture reporting is not yet complete.
 * jcmcu - Temperature sensor using mlx90614 with a serial interface.
@@ -24,13 +24,13 @@
 * ST7735 - Sainsmart LCD display driver.  While this works, I implemented this in C and included in the MicroPython OS to improve performance.
 * tm1637 - Driver for the tm1637 quad 7-segment LED display.
 
-##ESP32
+## ESP32
 * modules used on ESP32 running MicroPython.
 
-##ESP8266
+## ESP8266
 * modules used on ESP8266 running MicroPython.
 
-##root directory
+## Root Directory
 * bombs - render test for ST7735
 * motion - PIR sensor interupt test to display a message on motion detection.
 * tft - Tests for ST7735
