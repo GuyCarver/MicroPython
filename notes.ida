@@ -1,0 +1,13 @@
+
+
+ds3231 Battery Backup Clock:
+Blue connected to X9
+Yellow connected to X10
+
+TFT Display:
+SCL Green connected to X6
+SDA yellow connected to X8
+DC Blue connected to X1
+RES yellow connected to X2
+CS black connected to X5
+
