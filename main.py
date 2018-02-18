@@ -4,13 +4,14 @@
 #from sysfont import *
 # from terminalfont import *
 import gc
+from time import sleep_ms
 
 print(gc.mem_free())
 
 def reboot(  ) : pyb.hard_reset()
 #pyt = 0
 #if pyt :
-#  from ST7735 import makeg
+#  from st7735 import makeg
 #  t = makeg()
 #else:
 #  t = pyb.TFT("x", "X1", "X2")
@@ -20,10 +21,10 @@ def reboot(  ) : pyb.hard_reset()
 #
 #print(gc.mem_free())
 
-# import TFT
-# TFT.run(t)
+# import tft
+# tft.run(t)
 
-# Display animated circle on TFT -------------------------
+# Display animated circle on tft -------------------------
 
 #from bombs import bomber
 #t.rotation(2)
@@ -32,8 +33,8 @@ def reboot(  ) : pyb.hard_reset()
 
 # Accelerometer display ----------------------------------
 
-# import Balance
-# Balance.main()
+# import balance
+# balance.main()
 
 # Carpenter level display using accelerometer ------------
 
@@ -41,7 +42,7 @@ def reboot(  ) : pyb.hard_reset()
 # l = Level(t)
 # l.run()
 
-# PIR motion sensor --------------------------------------
+# pir motion sensor --------------------------------------
 
 # import motion
 # m = motion.motion(t)
@@ -53,30 +54,30 @@ def reboot(  ) : pyb.hard_reset()
 # tt = TreatThrower.TreatThrower(m)
 # tt.run()
 
-# L2082 Motor control ------------------------------------
+# l2082 Motor control ------------------------------------
 
-# from L298N import Motor
-# m1 = Motor('Y1', 'Y2', ('Y3', 4))
-# m2 = Motor('Y5', 'Y6', ('Y4', 4))
+# from l298n import motor
+# m1 = motor('Y1', 'Y2', ('Y3', 4))
+# m2 = motor('Y5', 'Y6', ('Y4', 4))
 
 # IR or SR04 distance display ----------------------------
 
-# from IRDistance import IRDistance
+# from irdistance import IRDistance
 # r = IRDistance("X12")
 
-# from SR04Distance import SR04Distance
-# r = SR04Distance("Y2", "Y1")
+# from sr04distance import sr04distance
+# r = sr04distance("Y2", "Y1")
 
 # t.rotation(2)
-# from DistanceDisplay import Display
-# d = Display(t, r)
+# from distancedisplay import display
+# d = display(t, r)
 # d.run()
 
 # Bluetooth board ----------------------------------------
 
-# from JYMCU import JYMCU
+# from jymcu import jymcu
 
-# u = JYMCU(6, 57600)
+# u = jymcu(6, 57600)
 # u.write("Testing.")
 # u.readline()
 # u.setrepl()
@@ -93,9 +94,9 @@ def reboot(  ) : pyb.hard_reset()
 
 # WIFI board ----------------------------------------
 
-# from ESP8266 import WIFI
+# from esp8266 import wifi
 
-# v = WIFI(6)
+# v = wifi(6)
 
 # from pyb import Pin
 # p = Pin("X11", Pin.IN, Pin.PULL_DOWN)
@@ -103,11 +104,11 @@ def reboot(  ) : pyb.hard_reset()
 
 # Accelerometer board ----------------------------------------
 
-#from GY521 import Accel
+#from gy521 import accel
 #
 print(gc.mem_free())
 #
-#a = Accel(1)
+#a = accel(1)
 #def d(): return a.acceltemprot
 #
 #print(gc.mem_free())
@@ -124,11 +125,53 @@ print(gc.mem_free())
 #
 #print(gc.mem_free())
 
-def do( ) :
-  return pyb.MPU6050('x', 0)
+#def do( ) :
+#  return pyb.MPU6050('x', 0)
 
 #def prnt( dev, font ) :
 #  dev.text((10, 10), "Hello!", 1, font, 1)
 #  dev.text((10, 30), "Hi Again?", 1, font, 3)
 
+from apds9960 import *
+a = apds9960(1)
 
+from oled import oled
+from terminalfont import *
+
+o = oled(2)
+
+def check():
+  empty = (0,0,0,0)
+  while True:
+    cr = a.colordataready
+    c = a.colordata() if cr else empty
+    p = a.proximity()
+    v = a.gesturedata()
+    if v == None :
+      v = empty
+
+    o.clear()
+    o.text((0, 10), "{:3}".format(p), 1, terminalfont)
+    o.text((0, 20), "{:3} {:3} {:3} {:3}".format(*v), 1, terminalfont)
+    o.text((0, 30), "{:3} {:3} {:3} {:3}".format(*c), 1, terminalfont)
+    o.display()
+    sleep_ms(100)
+
+check()
+
+#b = bytearray(4)
+#b[0] = 0x66
+#b[1] = 0x66
+#b[2] = 0x02
+#b[3] = 0x56
+#
+#u = pyb.UART(1, 115200)
+#
+#def rd( aData ) :
+#  v = u.read(aData)
+#  print("-----")
+#  for e in v :
+#    print("{:02x}".format(e))
+
+#from cjmcu import *
+#u = cjmcu(1)
