@@ -1,6 +1,8 @@
 
-#driver for GY-521 Accelerometer
+#driver for gy-521 Accelerometer
 #Translated by Guy Carver from the MPU6050 sample code.
+
+#todo: use const().
 
 import pyb
 
@@ -357,8 +359,8 @@ DMP_MEMORY_BANKS      = 8
 DMP_MEMORY_BANK_SIZE  = 256
 DMP_MEMORY_CHUNK_SIZE = 16
 
-class Accel(object) :
-  """GY-521 Accelerometer."""
+class accel(object) :
+  """gy-521 Accelerometer."""
 
   @staticmethod
   def color( aR, aG, aB ) :

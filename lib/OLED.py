@@ -1,7 +1,4 @@
-#driver for Sainsmart 1.8" TFT display ST7735
-#Translated by Guy Carver from the ST7735 sample code.
-
-#NOTE: This current code will set the pixel at 0,0 but the scrolling will not scroll it.  Don't know if it's software causing it or not.
+#driver for the diymall 9.6 oled display.
 
 import pyb
 
@@ -70,7 +67,7 @@ _VERTICAL_AND_LEFT_HORIZONTAL_SCROLL = const(0x2A)
 #   406 40E
 #   407 40F
 
-class OLED(object) :
+class oled(object) :
   """diyMall OLED 9.6 128x64 pixel display driver."""
 
   def __init__( self, aLoc ) :

@@ -1,4 +1,4 @@
-# MicroPython TM1637 quad 7-segment LED display driver
+# MicroPython tm1637 quad 7-segment LED display driver
 
 from machine import Pin
 from time import sleep_us
@@ -10,8 +10,8 @@ _CMD_SET3 = const(128) # 0x80 data control command set
 # 0-9, a-f, blank, dash
 _SEGMENTS = [63,6,91,79,102,109,125,7,127,111,119,124,57,94,121,113,0,64]
 
-class TM1637(object):
-    """Library for the quad 7-segment LED display modules based on the TM1637
+class tm1637(object):
+    """Library for the quad 7-segment LED display modules based on the tm1637
     LED driver."""
     def __init__(self, clk, dio, brightness=7):
         self.clk = clk

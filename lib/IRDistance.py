@@ -1,7 +1,7 @@
 
 from pyb import Pin, ADC
 
-class IRDistance(object):
+class irdistance(object):
   """ Driver for Sharp Gp2y0a IR distance sensor.  The distance
       range is around 3 to 40 inches. """
 

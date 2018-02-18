@@ -23,7 +23,7 @@ from pyb import UART, repl_uart, udelay
 #     AT+NAMEnewname  This is the name that will show up in windows.
 #     AT+PIN???? set 4 digit pairing pin.
 
-class JYMCU(object):
+class jymcu(object):
   """JY-MCU Bluetooth serial device driver.  This is simply a light UART wrapper
      with addition AT command methods to customize the device."""
 

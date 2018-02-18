@@ -2,7 +2,7 @@
 
 from pyb import Pin
 
-class Relay(object):
+class relay(object):
   """Control a relay board with an output pin.  Set on to True to drive the relay pin low
      which turns the relay on."""
 

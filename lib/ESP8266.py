@@ -27,7 +27,7 @@ from pyb import UART, udelay
 #AT+IPD - Receive data
 #AT+CSYSWDTENABLE or DISABLE - enable/disable restart on error watchdog.
 
-class WIFI:
+class wifi:
   """docstring for wifi"""
 
   def __init__(self, uart, baudrate = 115200):

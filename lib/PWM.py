@@ -2,7 +2,7 @@
 
 from pyb import Timer, Pin
 
-class PWM(object):
+class pwm(object):
   """docstring for PWMM"""
 
   #Dict pin name: timer #, channel #.
@@ -44,14 +44,14 @@ class PWM(object):
           if v[0] == timernum:
             return v
     except Exception as e :
-      raise PWM.PWMException("Pin {} cannot be used for PWM".format(pinname))
+      raise pwm.PWMException("Pin {} cannot be used for PWM".format(pinname))
 
-    raise PWM.PWMException("Pin {} cannot use timer {}".format(pinname, timernum))
+    raise pwm.PWMException("Pin {} cannot use timer {}".format(pinname, timernum))
 
   def __init__( self, p, timernum, afreq = 100 ) :
     isname = type(p) == str
     pinname = p if isname else p.name()
-    timernum, channel = PWM.timerandchannel(pinname, timernum)
+    timernum, channel = pwm.timerandchannel(pinname, timernum)
     if isname:
       p = Pin(pinname)
 

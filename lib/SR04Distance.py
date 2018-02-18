@@ -3,7 +3,7 @@ from pyb import Pin, Timer, udelay
 
 # WARNING: Do not use PA4-X5 or PA5-X6 as the echo pin without a 1k resistor.
 
-class SR04Distance(object):
+class sr04distance(object):
   """  """
 
   maxinches = 20 #maximum range of SR04.

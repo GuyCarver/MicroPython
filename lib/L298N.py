@@ -1,9 +1,9 @@
-#Driver for the L298N Dual HBridge motor controller.
+#Driver for the l298n Dual HBridge motor controller.
 
 from PWM import PWM
 from pyb import Pin, delay
 
-class Motor(  ):
+class motor(  ):
   """Control a motor connected to the L298N Dual motor controller."""
 
   def __init__( self, forward, backward, speed ) :

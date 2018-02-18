@@ -2,7 +2,7 @@
 
 import pyb
 
-class PIR(object):
+class pir(object):
   """Passive Infrared Motion Sensor driver.  Supports on/off through an output pin
      trigger reading as well as an interrupt callback on trigger high/low changes."""
 
