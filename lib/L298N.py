@@ -10,7 +10,10 @@ class motor(  ):
     """forward pin name, backward pin name, speed = (pin name, timer#)
        Need to make sure the given timer # is associated with the speed
        pin or an exception will be raised.  The speed pin must support
-       PWM."""
+       PWM.
+       #Examples:
+       m1 = motor('Y1', 'Y2', ('Y3', 4))
+       m2 = motor('Y5', 'Y6', ('Y4', 4)) """
     self._forward = Pin(forward, Pin.OUT_PP)
     self._backward = Pin(backward, Pin.OUT_PP)
     self._speedControl = PWM(speed[0], speed[1])
