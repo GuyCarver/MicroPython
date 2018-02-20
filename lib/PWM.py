@@ -36,7 +36,7 @@ class pwm(object):
   @staticmethod
   def timerandchannel( pinname, timernum ) :
     try:
-      a = PWM.PinChannels[pinname]
+      a = pwm.PinChannels[pinname]
       if timernum <= 0:
         return a[0]
       else:

@@ -1,6 +1,6 @@
 #Driver for the l298n Dual HBridge motor controller.
 
-from PWM import PWM
+from pwm import pwm
 from pyb import Pin, delay
 
 class motor(  ):
@@ -16,7 +16,7 @@ class motor(  ):
        m2 = motor('Y5', 'Y6', ('Y4', 4)) """
     self._forward = Pin(forward, Pin.OUT_PP)
     self._backward = Pin(backward, Pin.OUT_PP)
-    self._speedControl = PWM(speed[0], speed[1])
+    self._speedControl = pwm(speed[0], speed[1])
     self._speed = 0
 
   @property
