@@ -56,8 +56,8 @@ def reboot(  ) : pyb.hard_reset()
 
 # l2082 Motor control ------------------------------------
 
-# from l298n import motor
-# m1 = motor('Y1', 'Y2', ('Y3', 4))
+#from l298n import motor
+#m1 = motor('Y1', 'Y2', ('Y3', 4))
 # m2 = motor('Y5', 'Y6', ('Y4', 4))
 
 # IR or SR04 distance display ----------------------------
@@ -147,11 +147,13 @@ def check():
     c = a.colordata() if cr else empty
     p = a.proximity()
     v = a.gesturedata()
+    g = a.readgesture()
     if v == None :
       v = empty
 
     o.clear()
     o.text((0, 10), "{:3}".format(p), 1, terminalfont)
+#    o.text((0, 20), "{:3}".format(g), 1, terminalfont)
     o.text((0, 20), "{:3} {:3} {:3} {:3}".format(*v), 1, terminalfont)
     o.text((0, 30), "{:3} {:3} {:3} {:3}".format(*c), 1, terminalfont)
     o.display()

@@ -198,11 +198,23 @@ class apds9960(object) :
   _GWTIME_30_8MS = const(6)
   _GWTIME_39_2MS = const(7)
 
-  _NONE = const(0)
-  _UP = const(1)
-  _DOWN = const(2)
-  _LEFT = const(3)
-  _RIGHT = const(4)
+  _THRESHOLD_OUT = const(10)
+  _SENSITIVITY_1 = const(50)
+  _SENSITIVITY_2 = const(20)
+
+  _DIR_NONE = const(0)
+  _DIR_UP = const(1)
+  _DIR_DOWN = const(2)
+  _DIR_LEFT = const(3)
+  _DIR_RIGHT = const(4)
+  _DIR_NEAR = const(5)
+  _DIR_FAR = const(6)
+  _DIR_ALL = const(7)
+
+  _NA_STATE = const(0)
+  _NEAR_STATE = const(1)
+  _FAR_STATE = const(2)
+  _ALL_STATE = const(3)
 
   _DefaultIntTimeMS = const(10)
 
@@ -225,9 +237,24 @@ class apds9960(object) :
     self._status = 0    #Status
     self._gstatus = 0   #GStatus
 
-    self.resetcounts()
+    #gesture read variables.
+    self._ud_delta = 0
+    self._lr_delta = 0
+    self._ud_count  = 0
+    self._lr_count  = 0
+    self._near_count = 0
+    self._far_count = 0
+    self._state = 0
+    self._motion = _DIR_NONE
+    self._udata = bytearray(32)
+    self._ddata = bytearray(32)
+    self._ldata = bytearray(32)
+    self._rdata = bytearray(32)
+    self._index = 0
+    self._total_gestures= 0
+    self._fifo_data = bytearray(128)
 
-    self._millis = 0
+    self.resetcounts()
 
     self._b1 = bytearray(1)
     self._b2 = bytearray(2)
@@ -239,6 +266,10 @@ class apds9960(object) :
     """Read 8 bit value and return."""
     self._i2c.mem_read(self._b1, _ADDRESS, aLoc)
     return self._b1[0]
+
+  def readbuffer( self, aBuffer, aLoc ) :
+    """Read 8 bit values into given buffer."""
+    self._i2c.mem_read(aBuffer, _ADDRESS, aLoc)
 
   def read16( self, aLoc ) :
     """Read 16 bit value and return."""
@@ -494,59 +525,182 @@ class apds9960(object) :
     self.enabled = True
     sleep_us(50)
 
+  def resetgestureparams( self ) :
+    self._index = 0
+    self._total_gestures = 0
+    self._ud_delta = 0
+    self._lr_delta = 0
+    self._ud_count = 0
+    self._lr_count = 0
+    self._near_count = 0
+    self._far_count = 0
+    self._state = 0
+    self._motion = _DIR_NONE
+
   def readgesture( self ) :
-    #todo: implement
-    while True :
-      ud_diff = 0
-      lr_diff = 0
-      gesturereceived = 0
-      if not self.gesturevalid :
-        return 0
+    if self.gesturevalid :
+      while True :
+        sleep_us(30) #Wait a bit to make sure fifo buffer is full.
 
-      sleep_us(20) #todo: find correct value for this.
+        gstatus = self.getgstatus(GSTATUS_GVALID)
+        if gstatus :
+          fifo_level = self.read(_GFLVL)
+          if fifo_level > 0 :
+            bread = fifo_level * 4
+            self.readbuffer(self._fifo_data, _GFIFO_U)
 
-      toread = self.read(_GFLVL)
-      buf = self._i2c.mem_read(toread, _ADDRESS, _GFIFO_U)
+            for i in range(0, fifo_level):
+              i2 = i * 4
+              self._udata[i] = self._fifo_data[i2]
+              self._ddata[i] = self._fifo_data[i2 + 1]
+              self._ldata[i] = self._fifo_data[i2 + 2]
+              self._rdata[i] = self._fifo_data[i2 + 3]
 
-      diff = buf[0] - buf[1]
-      if abs(diff) > 13 :
-        ud_diff += diff
+            self._index += fifo_level - 1
+            self._total_gestures += fifo_level - 1
 
-      diff = buf[2] - buf[3]
-      if abs(diff) > 13 :
-        lr_diff += diff
+            if self.processgesturedata() :
+              self._index = 0
+              self._total_gestures = 0
+        else:
+          sleep_us(30)
+          self.decodegesture()
+          self.resetgestureparams()
+          return self._motion
 
-      if ud_diff != 0 :
-        if ud_diff < 0 :
-          if self._dcount > 0 :
-            gesturereceived = _UP
-          else:
-            self._ucount += 1
-        elif ud_diff > 0 :
-          if self._ucount > 0 :
-            gesturereceived = _DOWN
-          else:
-            self._dcount += 1
+    return _DIR_NONE
 
-      if lr_diff != 0 :
-        if lr_diff < 0 :
-          if self._rcount > 0 :
-            gesturereceived = _LEFT
-          else:
-            self._lcount += 1
-        elif lr_diff > 0 :
-          if self._lcount > 0 :
-            gesturereceived = _RIGHT
-          else:
-            self._rcount += 1
+  def processgesturedata( self ) :
+    if self._total_gestures > 4 :
+      ufirst = 0
+      dfirst = 0
+      lfirst = 0
+      rfirst = 0
+      ulast = 0
+      dlast = 0
+      llast = 0
+      rlast = 0
 
-      if (ud_diff != 0) or (lr_diff != 0) :
-        self._millis = ticks_ms()
+      if 0 < self._total_gestures <= 32 :
+        for i in range(0, self._total_gestures) :
+          u = self._udata[i]
+          d = self._ddata[i]
+          l = self._ldata[i]
+          r = self._rdata[i]
+          if u > _THRESHOLD_OUT and d > _THRESHOLD_OUT and l > _THRESHOLD_OUT and r > _THRESHOLD_OUT :
+            ufirst = u
+            dfirst = d
+            lfirst = l
+            rfirst = r
+            break
 
-      if gesturereceived or (ticks_ms() - self._millis > 300) :
-        self.resetcounts()
+        if ufirst == 0 or dfirst == 0 or lfirst == 0 or rfirst == 0 :
+          return False
 
-      return gesturereceived
+        for i in range(self._total_gestures - 1, -1, -1) :
+          u = self._udata[i]
+          d = self._ddata[i]
+          l = self._ldata[i]
+          r = self._rdata[i]
+          if u > _THRESHOLD_OUT and d > _THRESHOLD_OUT and l > _THRESHOLD_OUT and r > _THRESHOLD_OUT :
+            ulast = u
+            dlast = d
+            llast = l
+            rlast = r
+            break
+
+      ud_ratio_first = ((ufirst - dfirst) * 100) // (ufirst + dfirst)
+      lr_ratio_first = ((lfirst - rfirst) * 100) // (lfirst + rfirst)
+      ud_ratio_last = ((ulast - dlast) * 100) // (ulast + dlast)
+      lr_ratio_last = ((llast - rlast) * 100) // (llast + rlast)
+
+      ud_delta = ud_ratio_last - ud_ratio_first
+      lr_delta = lr_ratio_last - lr_ratio_first
+
+      self._ud_delta += ud_delta
+      self._lr_delta += lr_delta
+
+      if self._ud_delta >= _SENSITIVITY_1 :
+        self._ud_count = 1
+      elif self._ud_delta <= -_SENSITIVITY_1 :
+        self._ud_count = -1
+      else:
+        self._ud_count = 0
+
+      if self._lr_delta >= _SENSITIVITY_1 :
+        self._lr_count = 1
+      elif self._lr_delta <= -_SENSITIVITY_1 :
+        self._lr_count = -1
+      else:
+        self._lr_count = 0
+
+      if self._ud_count == 0 and self._lr_count == 0 :
+        if abs(ud_delta) < _SENSITIVITY_2 and abs(lr_delta) < _SENSITIVITY_2 :
+          if ud_delta == 0 and lr_delta == 0 :
+            self._near_count += 1
+          elif ud_delta != 0 and lr_delta != 0 :
+            self._far_count += 1
+
+          if self._near_count >= 10 and self._far_count >= 2 :
+            if ud_delta == 0 and lr_delta == 0 :
+              self._state = _NEAR_STATE
+            elif ud_delta != 0 and lr_delta != 0 :
+              self._state = _FAR_STATE
+
+            return True
+      else:
+        if abs(ud_delta) < _SENSITIVITY_2 and abs(lr_delta) < _SENSITIVITY_2 :
+          if ud_delta == 0 and lr_delta == 0 :
+            self._near_count += 1
+
+          if self._near_count >= 10 :
+            self._ud_count = 0
+            self._lr_count = 0
+            self._ud_delta = 0
+            self._lr_delta = 0
+
+    return False
+
+  def decodegesture( self ) :
+    if self._state == _NEAR_STATE :
+      self._motion = _DIR_NEAR
+      return True
+    elif self._state == _FAR_STATE :
+      self._motion = _DIR_FAR
+      return True
+
+    if self._ud_count == -1 and self._lr_count == 0 :
+      self._motion = _DIR_UP
+    elif self._ud_count == 1 and self._lr_count == 0 :
+      self._motion = _DIR_DOWN
+    elif self._ud_count == 0 and self._lr_count == 1 :
+      self._motion == _DIR_RIGHT
+    elif self._ud_count == 0 and self._lr_count == -1 :
+      self._motion == _DIR_LEFT
+    elif self._ud_count == -1 and self._lr_count == 1 :
+      if abs(self._ud_delta) > abs(self._lr_delta) :
+        self._motion = _DIR_UP
+      else:
+        self._motion = _DIR_RIGHT
+    elif self._ud_count == 1 and self._lr_count == -1 :
+      if abs(self._ud_delta) > abs(self._lr_delta) :
+        self._motion = _DIR_DOWN
+      else:
+        self._motion = _DIR_LEFT
+    elif self._ud_count == -1 and self._lr_count == -1 :
+      if abs(self._ud_delta) > abs(self._lr_delta) :
+        self._motion = _DIR_UP
+      else:
+        self._motion = _DIR_LEFT
+    elif self._ud_count == 1 and self._lr_count == 1 :
+      if abs(self._ud_delta) > abs(self._lr_delta) :
+        self._motion = _DIR_DOWN
+      else:
+        self._motion = _DIR_RIGHT
+    else:
+      return False
+
+    return True
 
 #  def calculatecolortemp( self, aRed, aGreen, aBlue ) :
 #    x = (-0.14282 * aRed) + (1.54924 * aGreen) + (-0.95641 * aBlue)
