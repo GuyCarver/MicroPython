@@ -1,5 +1,7 @@
 # MicroPython apds9960 motion detection device driver.
 
+#NOTE: This code is derived from a mix of Sparkfun and Adafruit arduino drivers.
+
 #todo: Have a mix of styles here.  Some use properties for setters while others use functions.
 
 import pyb
@@ -129,64 +131,66 @@ class apds9960(object) :
   _GPULSE_16US  = const(2)
   _GPULSE_32US  = const(3)
 
+  #Value Location data.
   #Following are the bytes describing the data packed into each 8 bit value on the chip.
   #Nibble 1 = position, 0 = bits
+  #NOTE: Commented out currently unused locations.
 
-  ENABLE_PON = const(0x01)
-  ENABLE_AEN = const(0x11)
-  ENABLE_PEN = const(0x21)
-  ENABLE_WEN = const(0x31)
-  ENABLE_AIEN = const(0x41)
-  ENABLE_PIEN = const(0x51)
-  ENABLE_GEN = const(0x61)
+  _ENABLE_PON = const(0x01)
+  _ENABLE_AEN = const(0x11)
+  _ENABLE_PEN = const(0x21)
+#  _ENABLE_WEN = const(0x31)
+#  _ENABLE_AIEN = const(0x41)
+  _ENABLE_PIEN = const(0x51)
+  _ENABLE_GEN = const(0x61)
 
-  PERS_APERS = const(0x04)
-  PERS_PPERS = const(0x44)
+#  _PERS_APERS = const(0x04)
+  _PERS_PPERS = const(0x44)
 
-  PPULSE_PPULSE = const(0x06)
-  PPULSE_PPLEN = const(0x62)
+  _PPULSE_PPULSE = const(0x06)
+  _PPULSE_PPLEN = const(0x62)
 
-  CONTROL_AGAIN = const(0x02)
-  CONTROL_PGAIN = const(0x22)
-  CONTROL_LDRIVE = const(0x42)
+  _CONTROL_AGAIN = const(0x02)
+  _CONTROL_PGAIN = const(0x22)
+  _CONTROL_LDRIVE = const(0x42)
 
-  CONFIG2_LED_BOOST = const(0x42)
-  CONFIG2_CPSIEN = const(0x61)  #Clear photo diode saturation int enable.
-  CONFIG2_PSIEN = const(0x71)   #Proximity saturation interrupt enable.
+  _CONFIG2_LED_BOOST = const(0x42)
+#  _CONFIG2_CPSIEN = const(0x61)  #Clear photo diode saturation int enable.
+#  _CONFIG2_PSIEN = const(0x71)   #Proximity saturation interrupt enable.
 
-  CONFIG3_PMASK_R = const(0x01)
-  CONFIG3_PMASK_L = const(0x11)
-  CONFIG3_PMASK_D = const(0x21)
-  CONFIG3_PMASK_U = const(0x31)
-  CONFIG3_SAI = const(0x41)
-  CONFIG3_PCMP = const(0x51)
+#  _CONFIG3_PMASK_R = const(0x01)
+#  _CONFIG3_PMASK_L = const(0x11)
+#  _CONFIG3_PMASK_D = const(0x21)
+#  _CONFIG3_PMASK_U = const(0x31)
+#  _CONFIG3_SAI = const(0x41)
+#  _CONFIG3_PCMP = const(0x51)
 
-  GCONFIG1_GEXPERS = const(0x02)
-  GCONFIG1_GEXMSK = const(0x24)
-  GCONFIG1_GFIFOTH = const(0x62)
+#  _GCONFIG1_GEXPERS = const(0x02)
+#  _GCONFIG1_GEXMSK = const(0x24)
+  _GCONFIG1_GFIFOTH = const(0x62)
 
-  GCONFIG2_GWTIME = const(0x03)
-  GCONFIG2_GLDRIVE = const(0x32)
-  GCONFIG2_GGAIN = const(0x52)
+  _GCONFIG2_GWTIME = const(0x03)
+#  _GCONFIG2_GLDRIVE = const(0x32)
+  _GCONFIG2_GGAIN = const(0x52)
 
-  GCONFIG3_GDIMS = const(0x02)
+  _GCONFIG3_GDIMS = const(0x02)
 
-  GCONFIG4_GMODE = const(0x01)
-  GCONFIG4_GIEN = const(0x12)
+#  _GCONFIG4_GMODE = const(0x01)
+#  _GCONFIG4_GIEN = const(0x12)
 
-  GPULSE_GPULSE = const(0x06)
-  GPULSE_GPLEN = const(0x62)
+  _GPULSE_GPULSE = const(0x06)
+  _GPULSE_GPLEN = const(0x62)
 
-  STATUS_AVALID = const(0x01)
-  STATUS_PVALID = const(0x11)
-  STATUS_GINT = const(0x21)
-  STATUS_AINT = const(0x41)
-  STATUS_PINT = const(0x51)
-  STATUS_PGSTAT = const(0x61)
-  STATUS_CPSTAT = const(0x71)
+  _STATUS_AVALID = const(0x01)
+#  _STATUS_PVALID = const(0x11)
+#  _STATUS_GINT = const(0x21)
+#  _STATUS_AINT = const(0x41)
+#  _STATUS_PINT = const(0x51)
+#  _STATUS_PGSTAT = const(0x61)
+#  _STATUS_CPSTAT = const(0x71)
 
-  GSTATUS_GVALID = const(0x01)
-  GSTATUS_GFOV = const(0x11)
+  _GSTATUS_GVALID = const(0x01)
+#  _GSTATUS_GFOV = const(0x11)
 
 # Gesture wait time values
   _GWTIME_0MS    = const(0)
@@ -219,10 +223,10 @@ class apds9960(object) :
   _DefaultIntTimeMS = const(10)
 
   def __init__( self, aLoc ) :
-    """aLoc I2C pin location is either 1, 'X', 2 or'Y'."""
+    '''aLoc I2C pin location is either 1, 'X', 2 or'Y'.'''
     self._i2c = pyb.I2C(aLoc, pyb.I2C.MASTER)
 
-    #Mirrors data on the controller.
+    #Mirrors data on the controller in order to eliminate need to read data from the controller on modification.
     self._enable = 0    #Enable
     self._pers = 0      #Pers
     self._ppulse = 0    #PPulse
@@ -263,31 +267,31 @@ class apds9960(object) :
     self.begin()
 
   def read( self, aLoc ) :
-    """Read 8 bit value and return."""
+    '''Read 8 bit value and return.'''
     self._i2c.mem_read(self._b1, _ADDRESS, aLoc)
     return self._b1[0]
 
   def readbuffer( self, aBuffer, aLoc ) :
-    """Read 8 bit values into given buffer."""
+    '''Read 8 bit values into given buffer.'''
     self._i2c.mem_read(aBuffer, _ADDRESS, aLoc)
 
   def read16( self, aLoc ) :
-    """Read 16 bit value and return."""
+    '''Read 16 bit value and return.'''
     self._i2c.mem_read(self._b2, _ADDRESS, aLoc)
     return (self._b2[1] << 8) | self._b2[0]
 
   def write( self, aLoc, aVal ) :
-    """Write 8 bit value to given address.  aVal may be a byte array."""
+    '''Write 8 bit value to given address.  aVal may be a byte array.'''
     self._i2c.mem_write(aVal, _ADDRESS, aLoc)
 
   def write16( self, aLoc, aVal ) :
-    """Write 16 bit value to given address."""
+    '''Write 16 bit value to given address.'''
     self._b2[0] = aVal
     self._b2[1] = aVal >> 8
     self._i2c.mem_write(self._b2, _ADDRESS, aLoc)
 
   def reset( self ):
-    """Reset the controller and set default frequency."""
+    '''Reset the controller and set default frequency.'''
     self.write(0, _MODE1)
     self.setfreq(_DEFAULTFREQ)
 
@@ -371,10 +375,12 @@ class apds9960(object) :
 
   #GStatus
   def getgstatus( self, aMember ) :
+    '''Get member of gstatus'''
     self._gstatus = self.read(_GSTATUS)
     return getvalue(self._gstatus, aMember)
 
   def resetcounts( self ) :
+    '''Reset the gesture reading counters.'''
     self._gestCnt = 0
     #todo - put these in an array.
     self._ucount = 0
@@ -383,13 +389,13 @@ class apds9960(object) :
     self._rcount = 0
 
   def enableproximityint( self, aValue ) :
-    self.setenable(ENABLE_PIEN, aValue)
+    self.setenable(_ENABLE_PIEN, aValue)
     self.clearInterrupt()
 
   def proximityintthreshold( self, aValue, aPersistance ) :
     self.write(_PILT, aValue & 0xFF)
     self.write(_PIHT, aValue >> 8)
-    self.setpers(PERS_PPERS, min(aPersistance, 7))
+    self.setpers(_PERS_PPERS, min(aPersistance, 7))
 
   def proximity( self ) :
     return self.read(_PDATA)
@@ -409,19 +415,19 @@ class apds9960(object) :
   def enablegesture( self, aEnable ) :
     #If disabling make sure we aren't currently in gesture mode.
     # Gesture mode is auto entered when proximity enter threshold is hit
-    # so we don't need to enable it.
+    # so we don't need to enable it even though we disable on gesture disable.
     if not aEnable :
       self.setgconfig4(GCONFIG4_GMODE, False)
-    self.setenable(ENABLE_GEN, aEnable)
+    self.setenable(_ENABLE_GEN, aEnable)
     self.resetcounts()
 
   @property
   def gesturevalid( self ) :
-    """Return True if gesture data exists."""
-    return self.getgstatus(GSTATUS_GVALID)
+    '''Return True if gesture data exists.'''
+    return self.getgstatus(_GSTATUS_GVALID)
 
   def gesturedata( self ) :
-    """Read gesture data and return as (u,d,l,r).  Returns None of no data ready."""
+    '''Read gesture data and return as (u,d,l,r).  Returns None of no data ready.'''
     level = self.read(_GFLVL)
     if level == 0 :
       return # no data
@@ -434,11 +440,11 @@ class apds9960(object) :
 
   @property
   def colordataready( self ) :
-    """Return true if color data ready to read."""
-    return self.getstatus(STATUS_AVALID)
+    '''Return true if color data ready to read.'''
+    return self.getstatus(_STATUS_AVALID)
 
   def colordata( self ) :
-    """Return color data as (c,r,g,b)."""
+    '''Return color data as (c,r,g,b).'''
     c = self.read16(_CDATAL)
     r = self.read16(_RDATAL)
     g = self.read16(_GDATAL)
@@ -461,23 +467,24 @@ class apds9960(object) :
 
   @property
   def enabled( self ) :
-    return self.getenable(ENABLE_PON)
+    return self.getenable(_ENABLE_PON)
 
   @enabled.setter
   def enabled( self, aValue ) :
-    self.setenable(ENABLE_PON, aValue)
+    self.setenable(_ENABLE_PON, aValue)
 
   def proxpulse( self, aLen, aPulses ) :
-    setvalue(self._ppulse, PPULSE_PPULSE, min(64, max(aPulses, 1)) - 1)
-    setvalue(self._ppulse, PPULSE_PPLEN, aLen)
-    self.write(PPULSE_PPULSE, self._ppulse)
+    setvalue(self._ppulse, _PPULSE_PPULSE, min(64, max(aPulses, 1)) - 1)
+    setvalue(self._ppulse, _PPULSE_PPLEN, aLen)
+    self.write(_PPULSE_PPULSE, self._ppulse)
 
   def gpulse( self, aLen, aPulses ) :
-    setvalue(self._gpulse, GPULSE_GPULSE, min(64, max(aPulses, 1)) - 1)
-    setvalue(self._gpulse, GPULSE_GPLEN, aLen)
-    self.write(PPULSE_PPULSE, self._gpulse)
+    setvalue(self._gpulse, _GPULSE_GPULSE, min(64, max(aPulses, 1)) - 1)
+    setvalue(self._gpulse, _GPULSE_GPLEN, aLen)
+    self.write(_GPULSE_GPULSE, self._gpulse)
 
   def begin( self ) :
+    '''Initialize the board for use.'''
     id = self.read(_ID)
     if id != _ID_1 and id != _ID_2:
       raise Exception('Incorrect apds9960 ID {}.'.format(id))
@@ -491,41 +498,41 @@ class apds9960(object) :
     self.write(_POFFSET_UR, 0)
     self.write(_POFFSET_DL, 0)
     self.write(_CONFIG1, 0x60)
-    self.setcontrol(CONTROL_LDRIVE, _LEDDRIVE_100MA)
-    self.setcontrol(CONTROL_AGAIN, _AGAIN_16X)
-    self.setcontrol(CONTROL_PGAIN, _PGAIN_8X)
+    self.setcontrol(_CONTROL_LDRIVE, _LEDDRIVE_100MA)
+    self.setcontrol(_CONTROL_AGAIN, _AGAIN_16X)
+    self.setcontrol(_CONTROL_PGAIN, _PGAIN_8X)
 
     self.proxpulse(_PPULSELEN_16US, 10)
     self.gpulse(_GPULSE_32US, 9)
 
     self.proximityintthreshold(0x3200, 1)
     self.enableproximityint(False)        #Proximity Interrupt
-#    self.intlimits(0xFFFF, 0)
 
     #100 makes the results a bit more erratic, No value boosts distance.  It seems
     # the higher the boost the more stable the data is.
-    self.setconfig2(CONFIG2_LED_BOOST, _LEDBOOST_300)
+    self.setconfig2(_CONFIG2_LED_BOOST, _LEDBOOST_300)
 
     #NOTE: This must be 1 if enter threshold is < exit or we will never get gesture input because we
     # won't stay in the gesture state for more than 1 cycle.
-    self.setgconfig1(GCONFIG1_GFIFOTH, _GFIFO_1)
-    self.setgconfig2(GCONFIG2_GWTIME, _GWTIME_2_8MS)
-    self.setgconfig2(GCONFIG2_GGAIN, _GGAIN_4)
-    self.setgconfig3(GCONFIG3_GDIMS, _DIMENSIONS_ALL)
+    self.setgconfig1(_GCONFIG1_GFIFOTH, _GFIFO_1)
+    self.setgconfig2(_GCONFIG2_GWTIME, _GWTIME_2_8MS)
+    self.setgconfig2(_GCONFIG2_GGAIN, _GGAIN_4)
+    self.setgconfig3(_GCONFIG3_GDIMS, _DIMENSIONS_ALL)
     #NOTE: An enter value lower than the exit value means we are constantly entering/exiting the state machine.
     #  If we don't do this we will not get proximity and color input because those are not updated when in gesture state.
     self.gestureenterthreshold(5)   #When proximity value is above this we enter the gesture state machine.
     self.gestureexitthreshold(255)  #When all gesture values are below this we exit the gesture state machine.
     self.gestureoffset(0, 0, 0, 0)
 
-    self.setenable(ENABLE_PEN, True)  #enable proximity
-    self.setenable(ENABLE_AEN, True)  #enable color
+    self.setenable(_ENABLE_PEN, True)  #enable proximity
+    self.setenable(_ENABLE_AEN, True)  #enable color
     self.enablegesture(True)
 
     self.enabled = True
     sleep_us(50)
 
   def resetgestureparams( self ) :
+    #NOTE: This function could probably be merged with resetcounts().
     self._index = 0
     self._total_gestures = 0
     self._ud_delta = 0
@@ -538,11 +545,14 @@ class apds9960(object) :
     self._motion = _DIR_NONE
 
   def readgesture( self ) :
+    '''Read gesture data and process for up, down, left, right movement.
+       Returns _DIR_???.'''
+    #NOTE: This function currently doesn't seem to return very accurate results.
     if self.gesturevalid :
       while True :
         sleep_us(30) #Wait a bit to make sure fifo buffer is full.
 
-        gstatus = self.getgstatus(GSTATUS_GVALID)
+        gstatus = self.getgstatus(_GSTATUS_GVALID)
         if gstatus :
           fifo_level = self.read(_GFLVL)
           if fifo_level > 0 :
