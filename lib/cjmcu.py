@@ -30,6 +30,10 @@ from pyb import UART
 #    0x13 Set the baud rate to 115200
 #Byte3 End of frame flag 0x56
 
+#NOTE: There is currently no method of reading temperature data in CONTINUOUS mode.  To do that you
+# must read the input stream and parse for 0x66, 0x66 for the beginning of a 9 byte data block.  I
+# didn't bother doing that as I don't use the CONTINUOUS mode.
+
 def c2f( aValue ):
   '''Celcius to Farenheit conversion.'''
   return (aValue * 9.0 / 5.0) + 32.0
@@ -58,16 +62,21 @@ class cjmcu(object) :
     self.update()
 
   def write( self ) :
+    '''write output buffer to board.'''
     self._uart.write(self._output)
 
   def read( self ) :
+    '''read into input buffer from board.  Always 9 bytes.'''
     self._uart.readinto(self._input)
 
   def update( self ) :
+    '''Send command to prompt data output from board, then read data.
+       Note that this only needs to be done if board in in POLL mode.'''
     self.write()
     self.read()
 
   def setbaud( self, aBaud ) :
+    '''Set baud rate on board then re-connect with new rate.'''
     self._output[2] = _BAUDBASE + aBaud
     self.update()
     self._output[2] = self._mode
@@ -75,6 +84,7 @@ class cjmcu(object) :
     self._uart.init(9600 << aBaud)
 
   def temps( self ) :
+    '''Return (ambient, object) temperatures in celcius.'''
     v1 = (self._input[4] << 8) | self._input[5]
     v2 = (self._input[6] << 8) | self._input[7]
     return (v1 / 100.0, v2 / 100.0)
