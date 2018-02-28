@@ -5,9 +5,6 @@ class irdistance(object):
   """ Driver for Sharp Gp2y0a IR distance sensor.  The distance
       range is around 3 to 40 inches. """
 
-  maxinches = 31.5 #Maximun range of IR board in inches.
-  _v2i = -1.02 #Voltage to inches power.
-
   def __init__( self, pin ) :
     """pin may be name or pin object.  It must be able to handle ADC input."""
 
@@ -25,8 +22,10 @@ class irdistance(object):
 
   @property
   def inches( self ) :
+    #distance / 204.8?  Why?
     volts = self.distance * 0.0048828125
-    return 65.0 * pow(volts, IRDistance._v2i)
+    #inches = v^-1.02.
+    return 65.0 * pow(volts, -1.02)
 
   @property
   def centimeters( self ) : return self.inches * 2.54

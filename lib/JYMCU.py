@@ -1,12 +1,11 @@
+# JY-MCU Bluetooth board ----------------------------------------
 
 from pyb import UART, repl_uart, udelay
-
-# JY-MCU Bluetooth board ----------------------------------------
 
 # This opens connection with Bluetooth module connected to Y1, Y2 (UART 6)
 # Then it sets the repl output to this UART.
 #COMMANDS AT - does nothing but get an ok.
-#  The posible baudrates are:
+#  The possible baudrates are:
 #     AT+BAUD1-------1200
 #     AT+BAUD2-------2400
 #     AT+BAUD3-------4800

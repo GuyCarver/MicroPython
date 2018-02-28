@@ -3,13 +3,13 @@
 import pyb
 
 class pir(object):
-  """Passive Infrared Motion Sensor driver.  Supports on/off through an output pin
-     trigger reading as well as an interrupt callback on trigger high/low changes."""
+  '''Passive Infrared Motion Sensor driver.  Supports on/off through an output pin
+     trigger reading as well as an interrupt callback on trigger high/low changes.'''
 
   def __init__(self, power, trigger, callback = None):
-    """Power and trigger pins, optional interrupt callback in the format
+    '''Power and trigger pins, optional interrupt callback in the format
        of fun( bOnOff ).  This will be called whenever the trigger state
-       changes."""
+       changes.'''
     if power != None:
       self._power = pyb.Pin(power, pyb.Pin.OUT_PP)
       self._power.low()
@@ -19,7 +19,7 @@ class pir(object):
     self.interrupt = callback
 
   def _onoff( self, aTF ) :
-    """Turn device on/off"""
+    '''Turn device on/off'''
     if (self._power != None):
       if (aTF):
         oldon = self.inton

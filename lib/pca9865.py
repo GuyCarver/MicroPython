@@ -48,7 +48,7 @@ class pca9865(object):
     return self._b1[0]
 
   def write( self, aVal, aLoc ) :
-    """Write 8 bit value to given address.  aVal may be an int buffer."""
+    '''Write 8 bit value to given address.  aVal may be an int buffer.'''
     self.i2c.mem_write(aVal, _ADDRESS, aLoc)
 
   def reset( self ):

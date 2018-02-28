@@ -3,7 +3,7 @@
 from pyb import Timer, Pin
 
 class pwm(object):
-  """docstring for PWMM"""
+  """Class to help with PWM pin and clock initialization."""
 
   #Dict pin name: timer #, channel #.
   PinChannels = {
@@ -48,15 +48,19 @@ class pwm(object):
 
     raise pwm.PWMException("Pin {} cannot use timer {}".format(pinname, timernum))
 
-  def __init__( self, p, timernum, afreq = 100 ) :
-    isname = type(p) == str
-    pinname = p if isname else p.name()
+  def __init__( self, aPin, timernum, afreq = 100 ) :
+    '''aPin may be a pyb.Pin or a pin name.
+       timernum must be a number corresponding to the given pin.
+       afreq is the frequency for the PWM signal.
+    '''
+    isname = type(aPin) == str
+    pinname = aPin if isname else aPin.name()
     timernum, channel = pwm.timerandchannel(pinname, timernum)
     if isname:
-      p = Pin(pinname)
+      aPin = Pin(pinname)
 
     self._timer = Timer(timernum, freq = afreq)
-    self._channel = self._timer.channel(channel, Timer.PWM, pin = p)
+    self._channel = self._timer.channel(channel, Timer.PWM, pin = aPin)
 
   @property
   def pulse_width( self ) : return self._channel.pulse_width()

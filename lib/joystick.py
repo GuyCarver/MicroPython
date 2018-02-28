@@ -1,10 +1,10 @@
 import pyb
 
 class joystick(object) :
-  _x_center = 2084.0
-  _y_center = 2114.0
-  _pos_x = 4095.0 - _x_center
-  _pos_y = 4095.0 - _y_center
+  _X_CENTER = 2084.0
+  _Y_CENTER = 2114.0
+  _POS_X = 4095.0 - _X_CENTER
+  _POS_Y = 4095.0 - _Y_CENTER
 
   def __init__( self, aX, aY, aB ) :
     self._jx = pyb.ADC(aX)
@@ -43,10 +43,10 @@ class joystick(object) :
     if self._index >= 3 :
       self._index = 0
 
-    rx = float(sum(self._xA)) / 3.0 - joystick._x_center
-    ry = float(sum(self._yA)) / 3.0 - joystick._y_center
-    dx = joystick._pos_x if rx >= 0 else joystick._x_center
-    dy = joystick._pos_y if ry >= 0 else joystick._y_center
+    rx = float(sum(self._xA)) / 3.0 - joystick._X_CENTER
+    ry = float(sum(self._yA)) / 3.0 - joystick._Y_CENTER
+    dx = joystick._POS_X if rx >= 0 else joystick._X_CENTER
+    dy = joystick._POS_Y if ry >= 0 else joystick._Y_CENTER
     self._x = rx / dx
     self._y = ry / dy
 
