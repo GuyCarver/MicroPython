@@ -1,33 +1,30 @@
+
 #Driver for the bts7960 43A high power motor controller.
 
-from pwm import pwm
-from pyb import Pin
+from machine import Pin, PWM
 from utime import sleep_ms
 
 class motor(  ):
   """Control a motor connected to the bts7960 motor controller."""
 
-  def __init__( self, aOnOff, aForward, aBackward ) :
-    """aOnOff is the pin to control free movement of the motor.
-       aForward and aBackward are tuples indicating pin and timer channel # for PWM pins.
-       aForward = (pin name, timer channel #)
-       aBackward = (pin name, timer channel #)
-       Need to make sure the given timer channel # is associated with the pin
-       or an exception will be raised.
-       #Examples:
-       m1 = motor('Y1', ('Y2', 8), ('Y3', 10))
-       m2 = motor('X1', ('X2', 5), ('X3', 5)) """
-    self._onoff = Pin(aOnOff, Pin.OUT_PP)
-    self._forward = pwm(*aForward)
-    self._backward = pwm(*aBackward)
+  def __init__( self, aForward, aBackward, aFreq = 100 ) :
+    """aForward = tuple (On Pin #, PWM Pin #)
+       aBackward = tuple (On Pin #, PWM Pin #)
+       aFreq = max frequency.
+       #Example:
+       m1 = motor((19, 22), (21, 23))
+    """
+    self._onf = Pin(aForward[0], Pin.OUT)
+    self._forward = PWM(Pin(aForward[1], Pin.OUT))
+    self._onb = Pin(aBackward[0], Pin.OUT)
+    self._backward = PWM(Pin(aBackward[1], Pin.OUT))
+    self._maxfreq = aFreq
     self._speed = 0
 
-  self.seton( self, aOn ) :
+  @staticmethod
+  def seton( aPin, aOn ) :
     '''Set on/off (free wheeling) state of motor.'''
-    if aOn :
-      self._onoff.high()
-    else:
-      self._onoff.low()
+    aPin.value(1 if aOn else 0)
 
   @property
   def speed( self ) : return self._speed
@@ -36,29 +33,31 @@ class motor(  ):
   def speed( self, aValue ) :
     '''Set velocity and direction of motor with -100 <= aValue <= 100.'''
     self._speed = aValue
+    pos = True
 
-    on = False
-    f = 0
-    b = 0
+    if aValue == 0 :
+      motor.seton(self._onb, False)
+      motor.seton(self._onf, False)
+      return
+    elif aValue < 0 :
+      aValue = -aValue
+      pos = False
 
-    if aValue < 0 :
-      on = True
-      f = 0
-      b = min(100, -aValue)
-    else:
-      on = True
-      f = min(100, aValue)
-      b = 0
+    f = self.p2hz(min(100, aValue))
+    motor.seton(self._onf, pos)
+    motor.seton(self._onb, not pos)
+    self._forward.freq(f)
+    self._backward.freq(f)
 
-    self.seton(on)
-    self._forward.pulse_width_percent = f
-    self._backward.pulse_width_percent = b
+  def p2hz( self, aPerc ) :
+    return int((self._maxfreq * aPerc) // 100)
 
   def brake( self ) :
     """ Brake the motor by sending power both directions, then shut it all down. """
-    self._forward.pulse_width_percent = 100
-    self._backward.pulse_width_percent = 100
-    self.seton(True)
+    self._forward.freq(self.p2hz(100))
+    self._backward.freq(self.p2hz(100))
+    motor.seton(self._onf, True)
+    motor.seton(self._onb, True)
     sleep_ms(500)
     self.speed = 0
 

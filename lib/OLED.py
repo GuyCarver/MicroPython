@@ -1,4 +1,5 @@
 #driver for the diymall 9.6 oled display.
+#128x32 pixel support with help from adafruit libraries.
 
 import pyb
 
@@ -22,12 +23,14 @@ _SETPRECHARGE = const(0xD9)
 
 _SETMULTIPLEX = const(0xA8)
 
-_SETLOWCOLUMN = const(0x00)
-_SETHIGHCOLUMN = const(0x10)
+#_SETLOWCOLUMN = const(0x00)
+#_SETHIGHCOLUMN = const(0x10)
 
 _SETSTARTLINE = const(0x40)
 
 _MEMORYMODE = const(0x20)
+_COLUMNADDR = const(0x21)
+_PAGEADDR = const(0x22)
 
 _COMSCANINC = const(0xC0)
 _COMSCANDEC = const(0xC8)
@@ -70,25 +73,26 @@ _VERTICAL_AND_LEFT_HORIZONTAL_SCROLL = const(0x2A)
 class oled(object) :
   """diyMall OLED 9.6 128x64 pixel display driver."""
 
-  def __init__( self, aLoc ) :
+  def __init__( self, aLoc, aHeight = 64 ) :
     """aLoc I2C pin location is either 1 for 'X' or 2 for 'Y'."""
-    self._size = (128, 64)
+    self._size = (128, aHeight)
     self._rotation = 0
     self._inverted = False
     self._on = False
     self.i2c = pyb.I2C(aLoc, pyb.I2C.MASTER, baudrate = 200000)
-    self.bytes = self.size[0] * self.size[1] // 8
+    self.pages = aHeight // 8
+    self.bytes = self.size[0] * self.pages
     self.buffer = bytearray(self.bytes + 1)
     self.buffer[0] = 0x40 #data write start command at very start of buffer.
 
     self.data = bytearray(2)
-    self.data[0] = 0
+    self.data[0] = 0  #0 = Command mode.
 
     self.command = _DISPLAYOFF
     self.command = _SETDISPLAYCLOCKDIV
     self.command = 0x80 #suggested ratio.
     self.command = _SETMULTIPLEX
-    self.command = 0x3F
+    self.command = aHeight - 1
     self.command = _SETDISPLAYOFFSET
     self.command = 0x0
     self.command = _SETSTARTLINE #| 0x0
@@ -99,9 +103,8 @@ class oled(object) :
     self.command = _SEGREMAP + 0x01
     self.command = _COMSCANDEC
     self.command = _SETCOMPINS
-    self.command = 0x12
-    self.command = _SETCONTRAST
-    self.command = 0xCF
+    self.command = 0x12 if aHeight == 64 else 0x02
+    self.dim = 0xCF
     self.command = _SETPRECHARGE
     self.command = 0xF1
     self.command = _SETVCOMDETECT
@@ -155,6 +158,16 @@ class oled(object) :
     if aTF != self._inverted :
       self._inverted = aTF
       self.command = _INVERTDISPLAY if aTF else _NORMALDISPLAY
+
+  @property
+  def dim( self ):
+    return self._dim
+
+  @dim.setter
+  def dim( self, aValue ):
+    self._dim = aValue
+    self.command = _SETCONTRAST
+    self.command = self._dim
 
   @micropython.native
   def fill( self, aValue ) :
@@ -316,7 +329,7 @@ class oled(object) :
   def doscrollDiag( self, start, stop, aDir ) :
     self.command = _SET_VERTICAL_SCROLL_AREA
     self.command = 0x00
-    self.command = self.size()[1]
+    self.command = self.size[1]
     self.command = aDir
     self.command = 0x00
     self.command = start
@@ -335,9 +348,13 @@ class oled(object) :
     self.command = _DEACTIVATE_SCROLL
 
   def display( self ) :
-    self.command = _SETLOWCOLUMN #| 0x00
-    self.command = _SETHIGHCOLUMN #| 0x00
-    self.command = _SETSTARTLINE #| 0x00
+    self.command = _COLUMNADDR
+    self.command = 0
+    self.command = self.size[0] - 1
+    self.command = _PAGEADDR
+    self.command = 0
+    self.command = self.pages - 1
+
     #buffer starts with 0x40 in 1st byte which is the command to start the buffer write.
     self.write(self.buffer)
 
