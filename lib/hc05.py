@@ -222,8 +222,8 @@ class hc05(object):
     '''Set class #'''
     return self._cmd('CLASS=', str(aClass))
 
-  def polar( self, aArg ) :
-    return self._cmd('POLAR=', aArg)
+  def polar( self, av1, av2 ) :
+    return self._cmd('POLAR=', str(av1), hc05._COMMA, str(av2))
 
   def qstate( self ) :
     '''Get current state'''
