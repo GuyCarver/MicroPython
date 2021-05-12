@@ -1,7 +1,7 @@
 # MicroPython PCA9865 16 servo controller driver.
 #NOTE: I tried writing 16 bit values for PWM but it crashed the controller requiring a power cycle to reset.
 
-import pyb
+import machine
 from time import sleep_us
 
 class pca9865(object):
@@ -28,7 +28,7 @@ class pca9865(object):
   def __init__(self, aLoc) :
     '''aLoc I2C pin location is either 1, 'X', 2 or'Y'.'''
     super(pca9865, self).__init__()
-    self.i2c = pyb.I2C(aLoc, pyb.I2C.MASTER)
+    self.i2c = machine.I2C(aLoc, machine.I2C.MASTER)
 #    print(self.i2c)
     self._buffer = bytearray(4)
     self._b1 = bytearray(1)
