@@ -1,17 +1,9 @@
 
 from machine import UART, Pin, PWM
 from time import sleep
+import math
 
-_FRAMESIZE = const(22)                          # See frame data below
-_FRAMESTART = const(0xFA)                       # Each frame starts with this tag
-_FRAMEINDEX = const(0xA0)                       # Indexes are 0xA0 + 0-90
-_ANGLESPERFRAME = const(4)
-_FRAMESPERROT = const(90)
-_ANGLESPERROT = const(_FRAMESPERROT * _ANGLESPERFRAME) # We get 90 frames with 4 angles per frame
-_FRAMESPERREAD = const(90)                      # Up this to read more data per attempt
-_INVALID = const(1 << 15)                       # Bit set in destance word of angle data indicating invalid data
-_BUFFERSIZE = const(_FRAMESIZE * _FRAMESPERREAD)
-_MOTORSPEED = const(30)
+#todo: Look into setting max distance instead of -1 for bad values
 
 #angle data.
 # distance = 14 bits - Distance or error code (invalid flag set)
@@ -37,7 +29,22 @@ _MOTORSPEED = const(30)
 #   XV11LIDAR_ERROR6 = 0x50
 
 #--------------------------------------------------------
+#Constants for lidar driver
+_FRAMESIZE = const(22)                          # See frame data below
+_FRAMESTART = const(0xFA)                       # Each frame starts with this tag
+_FRAMEINDEX = const(0xA0)                       # Indexes are 0xA0 + 0-90
+_ANGLESPERFRAME = const(4)
+_FRAMESPERROT = const(90)
+_ANGLESPERROT = const(_FRAMESPERROT * _ANGLESPERFRAME) # We get 90 frames with 4 angles per frame
+_FRAMESPERREAD = const(90)                      # Up this to read more data per attempt
+_INVALID = const(1 << 15)                       # Bit set in destance word of angle data indicating invalid data
+_BUFFERSIZE = const(_FRAMESIZE * _FRAMESPERREAD)
+_MOTORSPEED = const(32)
+_MAXDISTANCE = const(16383)
+
+#--------------------------------------------------------
 # def printit( aBuffer ):
+#   ''' Print bytearray data as hex. '''
 #   for v in aBuffer:
 #     print(hex(v), end=',')
 #
@@ -51,7 +58,7 @@ class lidar(object):
   def __init__( self ):
     super(lidar, self).__init__()
 
-    self._uart = UART(1, tx = 2, rx = 15, baudrate = 115200, buffer_size = 8192)
+    self._uart = UART(1, tx = 13, rx = 15, baudrate = 115200, buffer_size = 8192)
     self._motor = PWM(Pin(17), freq = 100)
     self._speed = _MOTORSPEED
     self._motor.duty(self._speed)
@@ -61,14 +68,7 @@ class lidar(object):
     self._inbuffer = bytearray(_BUFFERSIZE)
     self._angles = [0] * _ANGLESPERROT    # Storage for angles
     self._insync = False
-
-  #--------------------------------------------------------
-  @property
-  def rpm( self ): return self._rpm
-
-  #--------------------------------------------------------
-  @property
-  def insync( self ): return self._insync
+    self._good = 0
 
   #--------------------------------------------------------
   def sync( self ):
@@ -108,9 +108,10 @@ class lidar(object):
             toread -= cnt
 
         #Process the buffer data
-        g = self.process()
+        self._good = self.process()
         #If we got enough good values then we are synced
-        if g > 100:
+        # This is half the number of angles read
+        if self._good > _FRAMESPERREAD * 2:
           print('sync good')
           self._insync = True
 
@@ -186,12 +187,7 @@ class lidar(object):
     ''' Update lidar data '''
     if self._insync:
       self._fillbuffer()                        # Read new data
-      good = self.process()                     # Process the data
-      a = self._angles[0]
-      b = self._angles[90]
-      c = self._angles[180]
-      d = self._angles[270]
-      print('rpm:', self.rpm, a, b, c, d, good, '        ', end='\r')
+      self._good = self.process()               # Process the data
     else:
       insync = self.sync()
 
@@ -199,14 +195,117 @@ class lidar(object):
     self._speed = _MOTORSPEED if self._rpm < 245 else _MOTORSPEED - 1
     self._motor.duty(self._speed)
 
+  #--------------------------------------------------------
+  def output( self ):
+    '''  '''
+    a = self._angles[0]
+    b = self._angles[90]
+    c = self._angles[180]
+    d = self._angles[270]
+    print('rpm:', self._rpm, a, b, c, d, self._good, '        ', end='\r')
+
+
 #--------------------------------------------------------
-def run(  ):
+# Constants for lidardisplay
+_DISPLAYPERFRAME = const(15)
+_MAXDISPLAYDISTANCE = const(68)
+_DADJ = const(2048 // _MAXDISPLAYDISTANCE)
+_CX = const(120)
+_CY = const(67)
+
+#--------------------------------------------------------
+class lidardisplay(object):
+  ''' Display lidar data on TFT '''
+
+  #--------------------------------------------------------
+  def __init__( self, aLidar, aDisplay ):
+    ''' Setup display for give aLidar using tft aDisplay. '''
+
+    super(lidardisplay, self).__init__()
+    self._lidar = aLidar
+    self._tft = aDisplay
+    self._clear = 0xFFFFFF - self._tft.BLACK
+    self._draw = 0xFFFFFF - self._tft.YELLOW
+    self._tft.clearwin(self._clear)
+    self._tft.pixel(_CX, _CY, 0xFFFFFF - self._tft.DARKGREY)
+    self._angles = [-1] * len(aLidar._angles)
+    self._angle = 0
+    self._rpm = 0
+
+  #--------------------------------------------------------
+  def update( self ):
+    ''' Update give number of angles per call. Clears old displayed line
+         and draws a new line if distance has changed. '''
+    a0 = self._angle
+    plotted = 0
+    #todo: Could count only changed angles
+
+    #Loop for number of angles we wish to update this frame
+    for i in range(360):
+      d = min(self._lidar._angles[a0] // _DADJ, _MAXDISPLAYDISTANCE)
+      od = self._angles[a0]
+      a1 = (a0 + 1) % 360
+
+      #if line has changed since last update
+      if d != od:
+        plotted += 1
+
+        a0r = math.radians(a0)
+        a1r = math.radians(a1)
+        x0 = math.sin(a0r)
+        y0 = math.cos(a0r)
+        x1 = math.sin(a1r)
+        y1 = math.cos(a1r)
+
+        #Only clear if we drew something before.
+        if od >= 0:
+          oldx0 = int(x0 * od) + _CX
+          oldx1 = int(x1 * od) + _CX
+          oldy0 = int(y0 * od) + _CY
+          oldy1 = int(y1 * od) + _CY
+#           print('erase:', oldx0, oldy0, oldx1, oldy1)
+          if (abs(oldx0 - oldx1) + abs(oldy0 - oldy1)) < 2:
+            self._tft.pixel(oldx0, oldy0, self._clear)
+          else:
+            self._tft.line(oldx0, oldy0, oldx1, oldy1, self._clear)
+
+        self._angles[a0] = d
+
+        #Only draw new line if distance is not negative.
+        if d >= 0:
+          x0 = int(x0 * d) + _CX
+          x1 = int(x1 * d) + _CX
+          y0 = int(y0 * d) + _CY
+          y1 = int(y1 * d) + _CY
+#           print('plot:', x0, y0, x1, y1)
+          if (abs(x0 - x1) + abs(y0 - y1)) < 2:
+            self._tft.pixel(x0, y0, self._draw)
+          else:
+            self._tft.line(x0, y0, x1, y1, self._draw)
+
+      if plotted >= _DISPLAYPERFRAME:
+        break;
+
+      a0 = a1
+
+    self._angle = a0
+
+    if self._rpm != self._lidar._rpm:
+      self._rpm = self._lidar._rpm
+      rpm = '{}'.format(self._rpm)
+      self._tft.rect(0, 0, 35, 15, self._clear, self._clear)
+      self._tft.text(0, 0, rpm, self._draw)
+
+#todo: Perhaps run display update in a loop in a background thread
+
+#--------------------------------------------------------
+def run( aTFT ):
   l = lidar()
+  d = lidardisplay(l, aTFT)
 
   while True:
     l.update()
-    if l.insync:
-      pass
-      #todo: Output to display
+    if l._insync:
+#       l.output()
+      d.update()
 
-run()
