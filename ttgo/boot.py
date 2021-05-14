@@ -13,6 +13,6 @@ tft = display.TFT()
 tft.init(tft.ST7789, bgr=False, rot=tft.LANDSCAPE, miso=17, backl_pin=4, backl_on=1, mosi=19, clk=18, cs=5, dc=16)
 tft.setwin(40, 52, 320, 240)
 
-# import lidar
-# lidar.run(tft)
+import lidar
+lidar.run(tft)
 
