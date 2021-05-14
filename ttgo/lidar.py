@@ -3,8 +3,6 @@ from machine import UART, Pin, PWM
 from time import sleep
 import math
 
-#todo: Look into setting max distance instead of -1 for bad values
-
 #angle data.
 # distance = 14 bits - Distance or error code (invalid flag set)
 # strength = 1 bit - Flag indicating signal strength was lower than expected.
@@ -40,6 +38,8 @@ _FRAMESPERREAD = const(90)                      # Up this to read more data per 
 _INVALID = const(1 << 15)                       # Bit set in destance word of angle data indicating invalid data
 _BUFFERSIZE = const(_FRAMESIZE * _FRAMESPERREAD)
 _MOTORSPEED = const(32)
+_MOTORSPEEDMIN = const(28)
+_MOTORSPEEDMAX = const(38)
 _MAXDISTANCE = const(16383)
 
 #--------------------------------------------------------
@@ -58,9 +58,12 @@ class lidar(object):
   def __init__( self ):
     super(lidar, self).__init__()
 
+    #rx pin is connected to the orange wire. tx isn't necessary but we have to
+    # supply a pin.
     self._uart = UART(1, tx = 13, rx = 15, baudrate = 115200, buffer_size = 8192)
     self._motor = PWM(Pin(17), freq = 100)
     self._speed = _MOTORSPEED
+    self._speedcheck = 0
     self._motor.duty(self._speed)
 
     self._rpm = 0
@@ -71,7 +74,7 @@ class lidar(object):
     self._good = 0
 
   #--------------------------------------------------------
-  def sync( self ):
+  def _sync( self ):
     ''' sync up the serial data read with the start of frame. '''
 #     print('syncing')
 
@@ -108,7 +111,7 @@ class lidar(object):
             toread -= cnt
 
         #Process the buffer data
-        self._good = self.process()
+        self._process()
         #If we got enough good values then we are synced
         # This is half the number of angles read
         if self._good > _FRAMESPERREAD * 2:
@@ -116,12 +119,35 @@ class lidar(object):
           self._insync = True
 
   #--------------------------------------------------------
-  def getrpm( self, aIndex ):
+  @property
+  def speed( self ):
+    return self._speed
+
+  #--------------------------------------------------------
+  @speed.setter
+  def speed( self, aValue ):
+    self._speed = aValue
+    self._motor.duty(aValue)
+
+  #--------------------------------------------------------
+  def _getrpm( self, aIndex ):
     ''' Get the rpm value. '''
     return (self._buffer[aIndex + 2] | (self._buffer[aIndex + 3] << 8)) >> 6
 
   #--------------------------------------------------------
-  def checksum( self, aIndex = 0 ):
+  def _adjustrpm( self ):
+    '''  '''
+    if self._speedcheck >= 0:
+      if self._rpm < 240:
+        self.speed = min(self.speed + 1, _MOTORSPEEDMAX)
+      elif self._rpm > 250:
+        self.speed = max(self.speed - 1, _MOTORSPEEDMIN)
+      self._speedcheck = -20
+    else:
+      self._speedcheck += 1
+
+  #--------------------------------------------------------
+  def _checksum( self, aIndex = 0 ):
     ''' Calculate the checksum and return true if matched. '''
     chk = 0
     crc = self._buffer[aIndex + 20] | (self._buffer[aIndex + 21] << 8)
@@ -146,10 +172,10 @@ class lidar(object):
         read += cnt
 
   #--------------------------------------------------------
-  def process( self ):
+  def _process( self ):
     ''' Process buffer data and return number of good values read. '''
 
-    good = 0
+    self._good = 0
     #Loop for each frame in the buffer
     for x in range(0, _BUFFERSIZE, _FRAMESIZE):
 #       if x == 0:
@@ -157,9 +183,9 @@ class lidar(object):
       #Make sure buffer starts with start tag
       if self._buffer[x] == _FRAMESTART:
         #Make sure checksum is good
-        if self.checksum(x):
+        if self._checksum(x):
           #Average rpm value.
-          self._rpm = (self._rpm + self.getrpm(x)) >> 1
+          self._rpm = (self._rpm + self._getrpm(x)) >> 1
           angle = (self._buffer[x + 1] - 0xA0) << 2
           a = x + 4 #Point to angle data array
           #Process 4 angle values
@@ -167,9 +193,9 @@ class lidar(object):
             dist = self._buffer[y] | (self._buffer[y + 1] << 8)
             #If invalid flag set then clear distance
             if dist & _INVALID:
-              dist = -1
+              dist = _MAXDISTANCE
             else:
-              good += 1
+              self._good += 1
             self._angles[angle] = dist
             angle += 1
           #todo: May want to keep track of bad checksums and frames and report them
@@ -180,20 +206,15 @@ class lidar(object):
 #       else:
 #         print('bad frame')
 
-    return good
-
   #--------------------------------------------------------
   def update( self ):
     ''' Update lidar data '''
     if self._insync:
       self._fillbuffer()                        # Read new data
-      self._good = self.process()               # Process the data
+      self._process()                           # Process the data
+      self._adjustrpm()                         # Try and maintain 240-250 rpm
     else:
-      insync = self.sync()
-
-    #Adjust motor speed slightly to try and keep ~245 rpm
-    self._speed = _MOTORSPEED if self._rpm < 245 else _MOTORSPEED - 1
-    self._motor.duty(self._speed)
+      insync = self._sync()
 
   #--------------------------------------------------------
   def output( self ):
@@ -203,7 +224,6 @@ class lidar(object):
     c = self._angles[180]
     d = self._angles[270]
     print('rpm:', self._rpm, a, b, c, d, self._good, '        ', end='\r')
-
 
 #--------------------------------------------------------
 # Constants for lidardisplay
@@ -226,7 +246,8 @@ class lidardisplay(object):
     self._tft = aDisplay
     self._clear = 0xFFFFFF - self._tft.BLACK
     self._draw = 0xFFFFFF - self._tft.YELLOW
-    self._tft.clearwin(self._clear)
+    self._tft.set_bg(self._clear)
+    self._tft.clearwin()
     self._tft.pixel(_CX, _CY, 0xFFFFFF - self._tft.DARKGREY)
     self._angles = [-1] * len(aLidar._angles)
     self._angle = 0
@@ -238,7 +259,6 @@ class lidardisplay(object):
          and draws a new line if distance has changed. '''
     a0 = self._angle
     plotted = 0
-    #todo: Could count only changed angles
 
     #Loop for number of angles we wish to update this frame
     for i in range(360):
@@ -258,30 +278,28 @@ class lidardisplay(object):
         y1 = math.cos(a1r)
 
         #Only clear if we drew something before.
-        if od >= 0:
-          oldx0 = int(x0 * od) + _CX
-          oldx1 = int(x1 * od) + _CX
-          oldy0 = int(y0 * od) + _CY
-          oldy1 = int(y1 * od) + _CY
-#           print('erase:', oldx0, oldy0, oldx1, oldy1)
-          if (abs(oldx0 - oldx1) + abs(oldy0 - oldy1)) < 2:
-            self._tft.pixel(oldx0, oldy0, self._clear)
-          else:
-            self._tft.line(oldx0, oldy0, oldx1, oldy1, self._clear)
+        oldx0 = int(x0 * od) + _CX
+        oldx1 = int(x1 * od) + _CX
+        oldy0 = int(y0 * od) + _CY
+        oldy1 = int(y1 * od) + _CY
+#         print('erase:', oldx0, oldy0, oldx1, oldy1)
+        if (abs(oldx0 - oldx1) + abs(oldy0 - oldy1)) < 2:
+          self._tft.pixel(oldx0, oldy0, self._clear)
+        else:
+          self._tft.line(oldx0, oldy0, oldx1, oldy1, self._clear)
 
         self._angles[a0] = d
 
         #Only draw new line if distance is not negative.
-        if d >= 0:
-          x0 = int(x0 * d) + _CX
-          x1 = int(x1 * d) + _CX
-          y0 = int(y0 * d) + _CY
-          y1 = int(y1 * d) + _CY
-#           print('plot:', x0, y0, x1, y1)
-          if (abs(x0 - x1) + abs(y0 - y1)) < 2:
-            self._tft.pixel(x0, y0, self._draw)
-          else:
-            self._tft.line(x0, y0, x1, y1, self._draw)
+        x0 = int(x0 * d) + _CX
+        x1 = int(x1 * d) + _CX
+        y0 = int(y0 * d) + _CY
+        y1 = int(y1 * d) + _CY
+#         print('plot:', x0, y0, x1, y1)
+        if (abs(x0 - x1) + abs(y0 - y1)) < 2:
+          self._tft.pixel(x0, y0, self._draw)
+        else:
+          self._tft.line(x0, y0, x1, y1, self._draw)
 
       if plotted >= _DISPLAYPERFRAME:
         break;
