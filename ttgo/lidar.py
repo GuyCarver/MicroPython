@@ -1,6 +1,7 @@
 
 from machine import UART, Pin, PWM
-from time import sleep
+from utime import sleep_ms
+import _thread
 import math
 
 #angle data.
@@ -38,8 +39,8 @@ _FRAMESPERREAD = const(90)                      # Up this to read more data per 
 _INVALID = const(1 << 15)                       # Bit set in destance word of angle data indicating invalid data
 _BUFFERSIZE = const(_FRAMESIZE * _FRAMESPERREAD)
 _MOTORSPEED = const(32)
-_MOTORSPEEDMIN = const(28)
-_MOTORSPEEDMAX = const(38)
+_MOTORSPEEDMIN = const(20)
+_MOTORSPEEDMAX = const(40)
 _MAXDISTANCE = const(16383)
 
 #--------------------------------------------------------
@@ -140,7 +141,7 @@ class lidar(object):
     if self._speedcheck >= 0:
       if self._rpm < 240:
         self.speed = min(self.speed + 1, _MOTORSPEEDMAX)
-      elif self._rpm > 250:
+      elif self._rpm > 248:
         self.speed = max(self.speed - 1, _MOTORSPEEDMIN)
       self._speedcheck = -20
     else:
@@ -185,7 +186,7 @@ class lidar(object):
         #Make sure checksum is good
         if self._checksum(x):
           #Average rpm value.
-          self._rpm = (self._rpm + self._getrpm(x)) >> 1
+          self._rpm = self._getrpm(x) #(self._rpm + self._getrpm(x)) >> 1
           angle = (self._buffer[x + 1] - 0xA0) << 2
           a = x + 4 #Point to angle data array
           #Process 4 angle values
@@ -227,7 +228,7 @@ class lidar(object):
 
 #--------------------------------------------------------
 # Constants for lidardisplay
-_DISPLAYPERFRAME = const(15)
+_DISPLAYPERFRAME = const(90)
 _MAXDISPLAYDISTANCE = const(68)
 _DADJ = const(2048 // _MAXDISPLAYDISTANCE)
 _CX = const(120)
@@ -310,20 +311,28 @@ class lidardisplay(object):
 
     if self._rpm != self._lidar._rpm:
       self._rpm = self._lidar._rpm
-      rpm = '{}'.format(self._rpm)
       self._tft.rect(0, 0, 35, 15, self._clear, self._clear)
-      self._tft.text(0, 0, rpm, self._draw)
+      self._tft.text(0, 0, str(self._rpm), self._draw)
+#       self._tft.text(0, 15, str(self.speed), self._draw)
 
-#todo: Perhaps run display update in a loop in a background thread
+#--------------------------------------------------------
+def displayloop( aLidar, aTFT ):
+  ''' Run display loop in background thread. '''
+  d = lidardisplay(aLidar, aTFT)
+
+  while True:
+    if aLidar._insync:
+      d.update()
+    sleep_ms(33)
+    n = _thread.getnotification()
+    if n == _thread.EXIT:
+      break
 
 #--------------------------------------------------------
 def run( aTFT ):
   l = lidar()
-  d = lidardisplay(l, aTFT)
+  displaythread = _thread.start_new_thread('display', displayloop, (l, aTFT))
 
   while True:
     l.update()
-    if l._insync:
-#       l.output()
-      d.update()
-
+    #todo: Sleep?
