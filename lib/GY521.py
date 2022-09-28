@@ -377,7 +377,7 @@ class accel(object) :
 
     self.setclocksource(_CLOCK_PLL_XGYRO)
     self.setfullscalegyrorange(_GYRO_FS_250)
-    self.setfulscaleaccelrange(_ACCEL_FS_2)
+    self.setfullscaleaccelrange(_ACCEL_FS_2)
     self.setsleepenabled(False)
 
   def getrate( self ) :
@@ -531,7 +531,7 @@ class accel(object) :
     return [(self._data6[i] << 8) | self._data6[i + 1] for i in range(0, len(self._data6), 2)]
 
   def getrotation( self ) :
-    self._readdata(_RA_GYRO_XOUT_H, self.data6)
+    self._readdata(_RA_GYRO_XOUT_H, self._data6)
     return [(self._data6[i] << 8) | self._data6[i + 1] for i in range(0, len(self._data6), 2)]
 
   def reset( self ) :
